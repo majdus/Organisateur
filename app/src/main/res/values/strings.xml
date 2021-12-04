@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Organisateur</string>
+    <string name="addTask">Ajouter une tache</string>
+    <string name="entrer_une_nouvelle_tache">Entrez une nouvelle tache</string>
+</resources>
