@@ -10,15 +10,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Organisateur">
         <activity
+            android:label="Calendrier"
             android:name=".Calendrier"
             android:exported="false" />
         <activity
+            android:label="Alarms"
             android:name=".Notifications"
             android:exported="false" />
         <activity
+            android:label="Notes"
             android:name=".Notes"
             android:exported="false" />
         <activity
+            android:label="Tâches"
             android:name=".TaskList"
             android:exported="false" />
         <activity

@@ -29,22 +29,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTasksActivity() {
-        var intent = Intent(this, TaskList::class.java)
+        val intent = Intent(this, TaskList::class.java)
         startActivity(intent)
     }
 
     private fun startNotesActivity() {
-        var intent = Intent(this, Notes::class.java)
+        val intent = Intent(this, Notes::class.java)
         startActivity(intent)
     }
 
     private fun startNotificationsActivity() {
-        var intent = Intent(this, Notifications::class.java)
+        val intent = Intent(this, Notifications::class.java)
         startActivity(intent)
     }
 
     private fun startCalendrierActivity() {
-        var intent = Intent(this, Calendrier::class.java)
+        val intent = Intent(this, Calendrier::class.java)
         startActivity(intent)
     }
 }
