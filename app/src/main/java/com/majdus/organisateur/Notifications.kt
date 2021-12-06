@@ -18,6 +18,7 @@ class Notifications : ListActivity() {
         removeItemMessage = "Supprimer cette alarm?"
         removedToast = "Alarm supprimée!"
         successToast = "Nouvelle alarm ajoutée!"
+        updateToast = "Alarm mise à jour!"
         errorToast = "Le text de l'alarm ne peux pas être vide. Saisissez un text avant de valider!"
 
         alarms = findViewById(R.id.alarms)
@@ -30,5 +31,13 @@ class Notifications : ListActivity() {
         alarms.adapter = adapter
 
         sharedPreferences = getSharedPreferences("organisateur", Context.MODE_PRIVATE)
+    }
+
+    override fun edit(text: String) {
+        val last = text.split("\n").last()
+        val ts = last.split(":")
+        val hour = ts.first()
+        val minute = ts.last()
+        editAlarmItem(text.removeSuffix(last).trim(), text, hour, minute)
     }
 }

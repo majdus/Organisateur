@@ -20,7 +20,8 @@
         android:layout_alignParentBottom="true"
         android:layout_margin="16dp"
         android:contentDescription="@string/addTask"
-        android:src="@android:drawable/ic_input_add"
-        android:backgroundTint="@color/indigo_300"/>
+        android:src="@drawable/ic_add"
+        app:tint="@null"
+        android:backgroundTint="@color/indigo_500"/>
 
 </RelativeLayout>

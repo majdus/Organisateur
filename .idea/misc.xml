@@ -3,10 +3,13 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/drawable/ic_add.xml" value="0.21354166666666666" />
         <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/activity_main.xml" value="0.18333333333333332" />
         <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/activity_notes.xml" value="0.19739583333333333" />
         <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/activity_notifications.xml" value="0.3546875" />
         <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/activity_task_list.xml" value="0.19739583333333333" />
+        <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/dialog_alarm.xml" value="0.3546875" />
+        <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/dialog_task.xml" value="0.19739583333333333" />
         <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/layout_alarm.xml" value="0.3546875" />
         <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/layout_task.xml" value="0.19739583333333333" />
         <entry key="..\:/Majed/Dev/workspaces/android/Organisateur/app/src/main/res/layout/task_dialog.xml" value="0.19739583333333333" />

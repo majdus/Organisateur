@@ -22,8 +22,8 @@
                 android:id="@+id/buttonTasks"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:src="@drawable/list"
-                android:backgroundTint="@color/indigo_50"
+                android:src="@drawable/control_icon"
+                android:backgroundTint="@color/white"
                 android:layout_weight="1">
             </ImageButton>
 
@@ -31,8 +31,8 @@
                 android:id="@+id/buttonNotes"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:src="@drawable/note"
-                android:backgroundTint="@color/indigo_50"
+                android:src="@drawable/notes_icon"
+                android:backgroundTint="@color/white"
                 android:layout_weight="1" >
             </ImageButton>
 
@@ -48,8 +48,8 @@
                 android:id="@+id/buttonNotifications"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:src="@drawable/notification"
-                android:backgroundTint="@color/indigo_50"
+                android:src="@drawable/clock_icon"
+                android:backgroundTint="@color/white"
                 android:layout_weight="1" >
             </ImageButton>
 
@@ -57,8 +57,8 @@
                 android:id="@+id/buttonCalendrier"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:src="@drawable/reminder"
-                android:backgroundTint="@color/indigo_50"
+                android:src="@drawable/calendar_icon"
+                android:backgroundTint="@color/white"
                 android:layout_weight="1" >
             </ImageButton>
         </LinearLayout>

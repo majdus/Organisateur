@@ -16,6 +16,7 @@ class TaskList : ListActivity() {
         removeItemMessage = "Supprimer cette tâche?"
         removedToast = "Tâche supprimée!"
         successToast = "Nouvelle tâche ajoutée!"
+        updateToast = "Tâche mise à jour!"
         errorToast = "La tâche ne peux pas être vide. Saisissez un text avant de valider!"
 
         tasks = findViewById(R.id.tasks)
@@ -26,5 +27,9 @@ class TaskList : ListActivity() {
         initList(this)
         loadItems()
         tasks.adapter = adapter
+    }
+
+    override fun edit(text: String) {
+        editItem(text)
     }
 }

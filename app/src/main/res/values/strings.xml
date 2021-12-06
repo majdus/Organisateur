@@ -2,4 +2,10 @@
     <string name="app_name">Organisateur</string>
     <string name="addTask">Ajouter une tache</string>
     <string name="entrer_une_nouvelle_tache">Entrez une nouvelle tache</string>
+    <string name="new_alarm">Nouvelle alaram:</string>
+    <string name="cancel">Annuler</string>
+    <string name="set">Valider</string>
+    <string name="alarm_description">Description de l\'alarme</string>
+    <string name="new_task">Nouvelle tâche</string>
+    <string name="task_description">Description de la tâche</string>
 </resources>

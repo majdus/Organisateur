@@ -8,15 +8,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@+id/label"
-        android:layout_weight="20">
+        android:layout_weight="20"
+        android:layout_margin="5dp">
     </TextView>
+
+    <ImageButton
+        android:id="@+id/edit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/edit_icon"
+        android:backgroundTint="@color/white"
+        android:layout_marginEnd="5dp"
+        android:layout_weight="1">
+    </ImageButton>
 
     <ImageButton
         android:id="@+id/delete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/trash"
-        android:backgroundTint="@color/indigo_50"
+        android:src="@drawable/remove_icon"
+        android:backgroundTint="@color/white"
         android:layout_marginEnd="5dp"
         android:layout_weight="1">
     </ImageButton>
