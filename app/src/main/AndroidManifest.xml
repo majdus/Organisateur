@@ -15,7 +15,7 @@
             android:exported="false" />
         <activity
             android:label="Alarms"
-            android:name=".Notifications"
+            android:name=".Alarms"
             android:exported="false" />
         <activity
             android:label="Notes"

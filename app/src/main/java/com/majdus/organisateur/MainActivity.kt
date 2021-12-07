@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startNotificationsActivity() {
-        val intent = Intent(this, Notifications::class.java)
+        val intent = Intent(this, Alarms::class.java)
         startActivity(intent)
     }
 

@@ -6,7 +6,7 @@ import android.util.Log
 import android.widget.ListView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class Notifications : ListActivity() {
+class Alarms : ListActivity() {
 
     private lateinit var alarms: ListView
     private lateinit var addAlarm: FloatingActionButton
