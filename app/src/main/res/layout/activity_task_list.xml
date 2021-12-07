@@ -21,6 +21,5 @@
         android:layout_margin="16dp"
         android:contentDescription="@string/addTask"
         app:tint="@null"
-        android:src="@drawable/ic_add"
-        android:backgroundTint="@color/indigo_500"/>
+        android:src="@drawable/ic_add" />
 </RelativeLayout>

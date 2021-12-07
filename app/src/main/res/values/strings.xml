@@ -8,4 +8,5 @@
     <string name="alarm_description">Description de l\'alarme</string>
     <string name="new_task">Nouvelle tâche</string>
     <string name="task_description">Description de la tâche</string>
+    <string name="addAlarm">Ajouter une alarm</string>
 </resources>

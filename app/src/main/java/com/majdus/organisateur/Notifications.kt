@@ -2,6 +2,7 @@ package com.majdus.organisateur
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.widget.ListView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
@@ -26,7 +27,7 @@ class Notifications : ListActivity() {
         addAlarm = findViewById(R.id.addAlarm)
         addAlarm.setOnClickListener { addAlarmItem() }
 
-        initList(this)
+        initList(this, true)
         loadItems()
         alarms.adapter = adapter
 
@@ -39,5 +40,9 @@ class Notifications : ListActivity() {
         val hour = ts.first()
         val minute = ts.last()
         editAlarmItem(text.removeSuffix(last).trim(), text, hour, minute)
+    }
+
+    override fun alarmStatusChanged(checked: Boolean) {
+        Log.d("Alarm", "Alarm $checked")
     }
 }

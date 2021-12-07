@@ -32,4 +32,8 @@ class TaskList : ListActivity() {
     override fun edit(text: String) {
         editItem(text)
     }
+
+    override fun alarmStatusChanged(checked: Boolean) {
+        //Not relevent in this case
+    }
 }

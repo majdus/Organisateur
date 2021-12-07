@@ -51,6 +51,11 @@ class AlarmDialogFragment(private val listActivity: ListActivity, private val ho
     }
 
     private fun addAlarm(alarmDescription: String, hour: Int, minute: Int) {
+        if (alarmDescription.isEmpty()) {
+            Toast.makeText(context,"Ajoutez une description avant de valider.", Toast.LENGTH_LONG).show()
+            return
+        }
+
         listActivity.addNewItem("$alarmDescription\n$hour:$minute")
         createAlarm(alarmDescription, hour, minute)
     }

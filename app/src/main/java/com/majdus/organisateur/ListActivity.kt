@@ -26,10 +26,11 @@ abstract class ListActivity : AppCompatActivity() {
     protected var updateToast = ""
     protected var errorToast = ""
 
-    fun initList(activity: ListActivity) {
+    fun initList(activity: ListActivity, isAlarm: Boolean = false) {
         adapter = InteractiveArrayAdapter(
             activity,
-            list
+            list,
+            isAlarm
         )
         sharedPreferences = getSharedPreferences("organisateur", Context.MODE_PRIVATE)
     }
@@ -116,6 +117,11 @@ abstract class ListActivity : AppCompatActivity() {
     abstract fun edit(text: String);
 
     fun updateItem(oldText: String, newText: String) {
+        if (newText.isEmpty()) {
+            Toast.makeText(this,errorToast, Toast.LENGTH_LONG).show()
+            return
+        }
+
         list.remove(oldText)
         set.remove(oldText)
         list.add(newText)
@@ -129,4 +135,6 @@ abstract class ListActivity : AppCompatActivity() {
         }
         Toast.makeText(this, updateToast, Toast.LENGTH_SHORT).show()
     }
+
+    abstract fun alarmStatusChanged(checked: Boolean)
 }

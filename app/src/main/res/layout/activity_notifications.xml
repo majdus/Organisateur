@@ -19,9 +19,8 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_margin="16dp"
-        android:contentDescription="@string/addTask"
+        android:contentDescription="@string/addAlarm"
         android:src="@drawable/ic_add"
-        app:tint="@null"
-        android:backgroundTint="@color/indigo_500"/>
+        app:tint="@null" />
 
 </RelativeLayout>
