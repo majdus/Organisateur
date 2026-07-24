@@ -1,29 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_white_card">
 
     <TextView
-        android:layout_width="wrap_content"
+        android:id="@+id/dialogTitle"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="24sp"
+        android:text="Nouveau Rappel"
+        android:textSize="22sp"
         android:textStyle="bold"
-        android:text="@string/new_alarm"
-        android:layout_margin="5dp"/>
+        android:textColor="#0F172A"
+        android:layout_marginBottom="8dp"/>
 
-    <EditText
-        android:id="@+id/alarmDescription"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/alarm_description"
-        android:layout_margin="5dp"/>
+        android:text="Configurez l'intitulé et l'heure du rappel."
+        android:textSize="14sp"
+        android:textColor="#64748B"
+        android:layout_marginBottom="24dp"/>
 
-    <TimePicker
-        android:id="@+id/timePicker"
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:timePickerMode="spinner"
-        android:layout_margin="5dp"/>
+        android:layout_marginBottom="16dp"
+        app:startIconDrawable="@drawable/ic_edit_modern"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxStrokeColor="#8B5CF6"
+        app:hintTextColor="#8B5CF6"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/alarmDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/alarm_description"
+            android:inputType="textCapSentences"
+            android:textColor="#0F172A" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/timeButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="8dp"
+        app:icon="@drawable/clock_icon"
+        android:text="Sélectionner l'heure"
+        app:cornerRadius="12dp"
+        app:backgroundTint="#F8FAFC"
+        android:textColor="#0F172A"
+        app:iconTint="#8B5CF6"
+        app:strokeColor="#E2E8F0"
+        app:strokeWidth="1dp"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="24dp"
+        android:gravity="end">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancel"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cancel"
+            android:textColor="#64748B"
+            android:layout_marginEnd="8dp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/set"
+            app:backgroundTint="#8B5CF6"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="12dp" />
+    </LinearLayout>
 </LinearLayout>

@@ -3,13 +3,14 @@ package com.majdus.organisateur
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.widget.ListView
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class Alarms : ListActivity() {
 
-    private lateinit var alarms: ListView
-    private lateinit var addAlarm: FloatingActionButton
+    private lateinit var alarms: RecyclerView
+    private lateinit var addAlarm: android.widget.ImageButton
+    private lateinit var alarmAdapter: AlarmAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,14 +25,23 @@ class Alarms : ListActivity() {
 
         alarms = findViewById(R.id.alarms)
 
+        val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+
         addAlarm = findViewById(R.id.addAlarm)
         addAlarm.setOnClickListener { addAlarmItem() }
 
-        initList(this, true)
-        loadItems()
-        alarms.adapter = adapter
-
         sharedPreferences = getSharedPreferences("organisateur", Context.MODE_PRIVATE)
+        loadItems()
+        
+        alarmAdapter = AlarmAdapter(this, list)
+        alarms.adapter = alarmAdapter
+    }
+
+    override fun notifyDataChanged() {
+        alarmAdapter.notifyDataSetChanged()
     }
 
     override fun edit(text: String) {
@@ -42,7 +52,12 @@ class Alarms : ListActivity() {
         editAlarmItem(text.removeSuffix(last).trim(), text, hour, minute)
     }
 
-    override fun alarmStatusChanged(checked: Boolean) {
-        Log.d("Alarm", "Alarm $checked")
+    override fun alarmStatusChanged(text: String, checked: Boolean) {
+        Log.d("Alarm", "Alarm \"$text\" enabled=$checked")
+        AlarmScheduler.setEnabled(this, text, checked)
+    }
+
+    override fun onItemRemoved(text: String) {
+        AlarmScheduler.forget(this, text)
     }
 }

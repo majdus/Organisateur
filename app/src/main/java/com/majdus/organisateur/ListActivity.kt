@@ -13,9 +13,8 @@ import kotlin.collections.HashSet
 
 abstract class ListActivity : AppCompatActivity() {
     protected lateinit var sharedPreferences: SharedPreferences
-    protected lateinit var adapter: ArrayAdapter<String>
 
-    private var list = ArrayList<String>()
+    protected var list = ArrayList<String>()
     protected var set = HashSet<String>()
 
     protected var tag = ""
@@ -26,31 +25,12 @@ abstract class ListActivity : AppCompatActivity() {
     protected var updateToast = ""
     protected var errorToast = ""
 
-    fun initList(activity: ListActivity, isAlarm: Boolean = false) {
-        adapter = InteractiveArrayAdapter(
-            activity,
-            list,
-            isAlarm
-        )
-        sharedPreferences = getSharedPreferences("organisateur", Context.MODE_PRIVATE)
-    }
-
     protected fun loadItems() {
         set = sharedPreferences.getStringSet(tag, HashSet<String>()) as HashSet<String>
         list.addAll(set)
     }
 
-    protected fun addItem() {
-        val fragmentManager = supportFragmentManager
-        val taskDialogFragment = TaskDialogFragment(this, null)
-        taskDialogFragment.show(fragmentManager, "Task")
-    }
 
-    protected fun editItem(text: String) {
-        val fragmentManager = supportFragmentManager
-        val taskDialogFragment = TaskDialogFragment(this, text)
-        taskDialogFragment.show(fragmentManager, "Task")
-    }
 
     fun addAlarmItem() {
          val c: Calendar = Calendar.getInstance()
@@ -82,8 +62,8 @@ abstract class ListActivity : AppCompatActivity() {
             apply()
             commit()
         }
-        adapter.notifyDataSetChanged()
-        Toast.makeText(this, "$successToast", Toast.LENGTH_SHORT).show()
+        notifyDataChanged()
+        Toast.makeText(this, successToast, Toast.LENGTH_SHORT).show()
     }
 
      fun removeItem(text: String) {
@@ -92,8 +72,7 @@ abstract class ListActivity : AppCompatActivity() {
         builder.setMessage(text)
         builder.setPositiveButton(
             "Oui"
-        ) { _, _ ->  adapter.remove(text)
-            doRemoveItem(text)}
+        ) { _, _ -> doRemoveItem(text) }
         builder.setNegativeButton(
             "Non"
         ) { dialog, _ -> dialog.cancel() }
@@ -102,6 +81,7 @@ abstract class ListActivity : AppCompatActivity() {
     }
 
     private fun doRemoveItem(text: String) {
+        onItemRemoved(text)
         list.remove(text)
         set.remove(text)
         with (sharedPreferences.edit()) {
@@ -111,10 +91,17 @@ abstract class ListActivity : AppCompatActivity() {
             apply()
             commit()
         }
+        notifyDataChanged()
         Toast.makeText(this, removedToast, Toast.LENGTH_SHORT).show()
     }
 
     abstract fun edit(text: String);
+
+    protected open fun onItemRemoved(text: String) {}
+    protected open fun onItemUpdated(oldText: String, newText: String) {}
+
+    open fun isTaskCompleted(text: String): Boolean = false
+    open fun setTaskCompleted(text: String, completed: Boolean) {}
 
     fun updateItem(oldText: String, newText: String) {
         if (newText.isEmpty()) {
@@ -133,8 +120,11 @@ abstract class ListActivity : AppCompatActivity() {
             apply()
             commit()
         }
+        onItemUpdated(oldText, newText)
+        notifyDataChanged()
         Toast.makeText(this, updateToast, Toast.LENGTH_SHORT).show()
     }
 
-    abstract fun alarmStatusChanged(checked: Boolean)
+    abstract fun alarmStatusChanged(text: String, checked: Boolean)
+    abstract fun notifyDataChanged()
 }

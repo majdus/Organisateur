@@ -9,4 +9,15 @@
     <string name="new_task">Nouvelle tâche</string>
     <string name="task_description">Description de la tâche</string>
     <string name="addAlarm">Ajouter une alarm</string>
+    <string name="greeting_title">Bonjour,</string>
+    <string name="greeting_subtitle">Prêt à organiser votre journée ?</string>
+    <string name="title_tasks">Tâches</string>
+    <string name="subtitle_tasks">Gérez vos priorités</string>
+    <string name="title_notes">Notes</string>
+    <string name="subtitle_notes">Capturez vos idées</string>
+    <string name="title_alarms">Rappels</string>
+    <string name="subtitle_alarms">Ne manquez rien</string>
+    <string name="title_calendar">Calendrier</string>
+    <string name="subtitle_calendar">Votre planning</string>
+    <string name="type_your_notes_here">Tapez vos idées ici...</string>
 </resources>
