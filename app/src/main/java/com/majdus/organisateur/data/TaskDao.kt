@@ -8,8 +8,12 @@ import androidx.room.Update
 
 @Dao
 interface TaskDao {
-    @Query("SELECT * FROM tasks ORDER BY timestamp ASC")
+    /** Les tâches restantes d'abord: une liste se lit par ce qu'il reste à faire. */
+    @Query("SELECT * FROM tasks ORDER BY isCompleted ASC, timestamp ASC")
     suspend fun getAllTasks(): List<Task>
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE isCompleted = 0")
+    suspend fun countPending(): Int
 
     @Insert
     suspend fun insert(task: Task)

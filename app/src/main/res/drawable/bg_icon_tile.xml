@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pastille d'icône: la couleur est appliquée par backgroundTint, une seule forme suffit
+     donc pour les quatre teintes de fonctionnalité. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners android:radius="18dp" />
+</shape>

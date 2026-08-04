@@ -39,7 +39,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Design system "Pure Light": rôles sémantiques utilisés par l'écran Rappels -->
+    <!-- Design system "Pure Light": rôles sémantiques partagés par tous les écrans -->
     <color name="app_background">#F8FAFC</color>
     <color name="surface_card">#FFFFFF</color>
     <color name="surface_muted">#F1F5F9</color>
@@ -52,4 +52,15 @@
     <color name="accent_soft">#EEF2FF</color>
     <color name="danger">#EF4444</color>
     <color name="danger_soft">#FEF2F2</color>
+
+    <!-- Une teinte par fonctionnalité, sur la même base neutre: la tuile d'accueil et
+         l'écran correspondant partagent toujours la même couleur. -->
+    <color name="accent_tasks">#10B981</color>
+    <color name="accent_tasks_soft">#ECFDF5</color>
+    <color name="accent_notes">#8B5CF6</color>
+    <color name="accent_notes_soft">#F5F3FF</color>
+    <color name="accent_alarms">#6366F1</color>
+    <color name="accent_alarms_soft">#EEF2FF</color>
+    <color name="accent_calendar">#F59E0B</color>
+    <color name="accent_calendar_soft">#FFFBEB</color>
 </resources>

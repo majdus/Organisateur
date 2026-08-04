@@ -187,25 +187,6 @@ class Alarms : AppCompatActivity() {
         Snackbar.make(findViewById(R.id.rootLayout), message, Snackbar.LENGTH_LONG)
             .setAnchorView(if (addButton.isShown) addButton else null)
 
-    /** Réduit le bouton d'action en icône pendant le défilement vers le bas. */
-    private class FabScrollBehaviour(
-        private val fab: ExtendedFloatingActionButton
-    ) : RecyclerView.OnScrollListener() {
-        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-            // En haut de liste — et donc aussi quand la liste ne défile pas — le bouton
-            // reprend toujours sa forme étendue: le réduire n'aurait rien masqué.
-            when {
-                !recyclerView.canScrollVertically(-1) -> if (!fab.isExtended) fab.extend()
-                dy > SCROLL_THRESHOLD -> if (fab.isExtended) fab.shrink()
-                dy < -SCROLL_THRESHOLD -> if (!fab.isExtended) fab.extend()
-            }
-        }
-
-        companion object {
-            private const val SCROLL_THRESHOLD = 8
-        }
-    }
-
     companion object {
         private const val TAG_EDIT_SHEET = "alarm_edit_sheet"
         private const val COUNTDOWN_INTERVAL_MS = 30_000L

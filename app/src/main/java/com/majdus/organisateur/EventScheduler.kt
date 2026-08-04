@@ -5,18 +5,21 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.majdus.organisateur.data.Event
-import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Locale
 
 object EventScheduler {
     const val EXTRA_EVENT_ID = "com.majdus.organisateur.EVENT_ID"
     const val EXTRA_EVENT_TITLE = "com.majdus.organisateur.EVENT_TITLE"
+    const val EXTRA_EVENT_TIME = "com.majdus.organisateur.EVENT_TIME"
 
     private fun pendingIntent(context: Context, event: Event): PendingIntent {
         val intent = Intent(context, EventReceiver::class.java).apply {
             putExtra(EXTRA_EVENT_ID, event.id)
             putExtra(EXTRA_EVENT_TITLE, event.title)
+            putExtra(
+                EXTRA_EVENT_TIME,
+                String.format(Locale.FRANCE, "%02d:%02d", event.hour, event.minute)
+            )
         }
         return PendingIntent.getBroadcast(
             context,
@@ -29,29 +32,20 @@ object EventScheduler {
     fun schedule(context: Context, event: Event) {
         if (!event.hasNotification) return
 
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.FRANCE)
-        val date = dateFormat.parse(event.date) ?: return
-        
-        val calendar = Calendar.getInstance().apply {
-            time = date
-            set(Calendar.HOUR_OF_DAY, event.hour)
-            set(Calendar.MINUTE, event.minute)
-            set(Calendar.SECOND, 0)
-        }
-
-        if (calendar.timeInMillis <= System.currentTimeMillis()) {
-            return // Don't schedule in the past
-        }
+        val triggerAt = EventTimes.at(event)
+        // Une heure déjà passée ne se programme pas: la feuille d'édition en avertit
+        // l'utilisateur au moment de la saisie.
+        if (triggerAt <= System.currentTimeMillis()) return
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         try {
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
+                triggerAt,
                 pendingIntent(context, event)
             )
         } catch (e: SecurityException) {
-            // Permission not granted, cannot schedule exact alarm
+            // L'autorisation d'alarme exacte n'est pas accordée: rien à programmer.
             e.printStackTrace()
         }
     }

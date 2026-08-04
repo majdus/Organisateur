@@ -1,43 +1,43 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.Organisateur" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/light_blue_600</item>
+
+    <!-- L'application assume un rendu clair unique ("Pure Light"): les rôles de couleur sont
+         définis une fois ici et repris tels quels par tous les écrans. Hériter de DayNight
+         ferait dériver les composants Material en mode sombre alors que les couleurs, elles,
+         resteraient claires. -->
+    <style name="Theme.Organisateur" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/accent_indigo</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorPrimaryContainer">@color/light_blue_100</item>
-        <item name="colorOnPrimaryContainer">@color/light_blue_900</item>
+        <item name="colorPrimaryContainer">@color/accent_soft</item>
+        <item name="colorOnPrimaryContainer">@color/accent_indigo</item>
 
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/indigo_500</item>
+        <item name="colorSecondary">@color/accent_violet</item>
         <item name="colorOnSecondary">@color/white</item>
-        <item name="colorSecondaryContainer">@color/indigo_100</item>
-        <item name="colorOnSecondaryContainer">@color/indigo_900</item>
+        <item name="colorSecondaryContainer">@color/accent_soft</item>
+        <item name="colorOnSecondaryContainer">@color/accent_indigo</item>
 
-        <!-- Background & Surface -->
         <item name="android:colorBackground">@color/app_background</item>
-        <item name="colorOnBackground">#1E293B</item>
+        <item name="colorOnBackground">@color/text_primary</item>
         <item name="colorSurface">@color/surface_card</item>
-        <item name="colorOnSurface">#1E293B</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorSurfaceVariant">@color/surface_muted</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorOutline">@color/border_subtle</item>
+        <item name="colorError">@color/danger</item>
+        <item name="elevationOverlayEnabled">false</item>
 
-        <!-- Status bar -->
-        <item name="android:statusBarColor">?attr/colorSurface</item>
+        <item name="android:statusBarColor">@color/app_background</item>
+        <item name="android:navigationBarColor">@color/app_background</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
 
         <item name="bottomSheetDialogTheme">@style/Theme.Organisateur.BottomSheet</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Organisateur.AlertDialog</item>
+        <item name="snackbarStyle">@style/Widget.Organisateur.Snackbar</item>
+        <item name="snackbarTextViewStyle">@style/Widget.Organisateur.Snackbar.TextView</item>
+        <item name="snackbarButtonStyle">@style/Widget.Organisateur.Snackbar.Button</item>
     </style>
 
-    <!-- ===== Écran Rappels ===== -->
-
-    <style name="Widget.Organisateur.Switch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
-        <item name="thumbTint">@color/switch_thumb_tint</item>
-        <item name="trackTint">@color/switch_track_tint</item>
-        <item name="trackDecorationTint">@color/switch_track_decoration_tint</item>
-    </style>
-
-    <style name="TextAppearance.Organisateur.Time" parent="TextAppearance.Material3.HeadlineLarge">
-        <item name="android:fontFamily">sans-serif-light</item>
-        <item name="android:textSize">40sp</item>
-        <item name="android:letterSpacing">-0.03</item>
-    </style>
+    <!-- ===== Typographie ===== -->
 
     <style name="TextAppearance.Organisateur.ScreenTitle" parent="TextAppearance.Material3.HeadlineMedium">
         <item name="android:fontFamily">sans-serif-medium</item>
@@ -46,39 +46,72 @@
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
-    <style name="Theme.Organisateur.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
-        <item name="bottomSheetStyle">@style/Widget.Organisateur.BottomSheet</item>
+    <style name="TextAppearance.Organisateur.Summary" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
     </style>
 
-    <style name="Widget.Organisateur.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
-        <item name="shapeAppearance">@style/ShapeAppearance.Organisateur.BottomSheet</item>
-        <item name="backgroundTint">@color/surface_card</item>
-        <item name="behavior_skipCollapsed">true</item>
+    <style name="TextAppearance.Organisateur.SectionTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:textColor">@color/text_primary</item>
     </style>
 
-    <style name="ShapeAppearance.Organisateur.BottomSheet" parent="ShapeAppearance.Material3.LargeComponent">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSizeTopLeft">28dp</item>
-        <item name="cornerSizeTopRight">28dp</item>
-        <item name="cornerSizeBottomLeft">0dp</item>
-        <item name="cornerSizeBottomRight">0dp</item>
+    <style name="TextAppearance.Organisateur.Time" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textSize">40sp</item>
+        <item name="android:letterSpacing">-0.03</item>
     </style>
 
-    <!-- Sans cet habillage, le sélecteur d'heure hérite de la palette Material par défaut
-         (fond cyan, accents roses) et jure avec le reste de l'écran. -->
-    <style name="ThemeOverlay.Organisateur.TimePicker" parent="ThemeOverlay.Material3.MaterialTimePicker">
-        <item name="colorPrimary">@color/accent_indigo</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorPrimaryContainer">@color/accent_soft</item>
-        <item name="colorOnPrimaryContainer">@color/accent_indigo</item>
-        <item name="colorSecondaryContainer">@color/accent_soft</item>
-        <item name="colorOnSecondaryContainer">@color/accent_indigo</item>
-        <item name="colorSurface">@color/surface_card</item>
-        <item name="colorOnSurface">@color/text_primary</item>
-        <item name="colorSurfaceVariant">@color/surface_muted</item>
-        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
-        <item name="colorOutline">@color/border_subtle</item>
-        <item name="elevationOverlayEnabled">false</item>
+    <style name="TextAppearance.Organisateur.SheetTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- ===== Composants partagés ===== -->
+
+    <!-- Carte de contenu: fond blanc, coins très arrondis, bordure fine plutôt qu'une ombre.
+         C'est la brique visuelle de tous les écrans. -->
+    <style name="Widget.Organisateur.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/surface_card</item>
+        <item name="cardCornerRadius">24dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/border_subtle</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="rippleColor">#146366F1</item>
+    </style>
+
+    <style name="Widget.Organisateur.Fab" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
+        <item name="android:textColor">@color/white</item>
+        <item name="iconTint">@color/white</item>
+        <item name="rippleColor">#33FFFFFF</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="Widget.Organisateur.Switch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="thumbTint">@color/switch_thumb_tint</item>
+        <item name="trackTint">@color/switch_track_tint</item>
+        <item name="trackDecorationTint">@color/switch_track_decoration_tint</item>
+    </style>
+
+    <!-- Chaque écran porte sa teinte jusque dans ses interrupteurs. -->
+    <style name="Widget.Organisateur.Switch.Tasks">
+        <item name="trackTint">@color/switch_track_tint_tasks</item>
+    </style>
+
+    <style name="Widget.Organisateur.Switch.Calendar">
+        <item name="trackTint">@color/switch_track_tint_calendar</item>
+    </style>
+
+    <style name="Widget.Organisateur.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
     </style>
 
     <style name="Widget.Organisateur.Button.Primary" parent="Widget.Material3.Button">
@@ -106,5 +139,92 @@
         <item name="android:minHeight">52dp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:textSize">15sp</item>
+    </style>
+
+    <!-- Le Snackbar par défaut est un rectangle sombre à angles droits: seul élément de
+         l'interface à ne pas suivre le rayon des cartes. -->
+    <style name="Widget.Organisateur.Snackbar" parent="Widget.Material3.Snackbar">
+        <item name="backgroundTint">@color/text_primary</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Organisateur.Snackbar</item>
+    </style>
+
+    <style name="ShapeAppearance.Organisateur.Snackbar" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="Widget.Organisateur.Snackbar.TextView" parent="Widget.Material3.Snackbar.TextView">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="Widget.Organisateur.Snackbar.Button" parent="Widget.Material3.Button.TextButton.Snackbar">
+        <item name="android:textColor">#A5B4FC</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <!-- ===== Feuilles et boîtes de dialogue ===== -->
+
+    <style name="Theme.Organisateur.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Organisateur.BottomSheet</item>
+    </style>
+
+    <style name="Widget.Organisateur.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="shapeAppearance">@style/ShapeAppearance.Organisateur.BottomSheet</item>
+        <item name="backgroundTint">@color/surface_card</item>
+        <item name="behavior_skipCollapsed">true</item>
+    </style>
+
+    <style name="ShapeAppearance.Organisateur.BottomSheet" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">28dp</item>
+        <item name="cornerSizeTopRight">28dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="ThemeOverlay.Organisateur.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Organisateur.Dialog</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.Organisateur.Title</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Organisateur.Button.Danger</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Organisateur.Button.Text</item>
+        <item name="android:background">@color/surface_card</item>
+    </style>
+
+    <style name="ShapeAppearance.Organisateur.Dialog" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+
+    <style name="MaterialAlertDialog.Organisateur.Title" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Sans cet habillage, le sélecteur d'heure hérite de la palette Material par défaut
+         (fond cyan, accents roses) et jure avec le reste de l'écran. -->
+    <style name="ThemeOverlay.Organisateur.TimePicker" parent="ThemeOverlay.Material3.MaterialTimePicker">
+        <item name="colorPrimary">@color/accent_indigo</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/accent_soft</item>
+        <item name="colorOnPrimaryContainer">@color/accent_indigo</item>
+        <item name="colorSecondaryContainer">@color/accent_soft</item>
+        <item name="colorOnSecondaryContainer">@color/accent_indigo</item>
+        <item name="colorSurface">@color/surface_card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorSurfaceVariant">@color/surface_muted</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorOutline">@color/border_subtle</item>
+        <item name="elevationOverlayEnabled">false</item>
+    </style>
+
+    <!-- Le calendrier porte l'ambre: son sélecteur d'heure aussi. -->
+    <style name="ThemeOverlay.Organisateur.TimePicker.Calendar">
+        <item name="colorPrimary">@color/accent_calendar</item>
+        <item name="colorPrimaryContainer">@color/accent_calendar_soft</item>
+        <item name="colorOnPrimaryContainer">@color/accent_calendar</item>
+        <item name="colorSecondaryContainer">@color/accent_calendar_soft</item>
+        <item name="colorOnSecondaryContainer">@color/accent_calendar</item>
     </style>
 </resources>
