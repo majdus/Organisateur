@@ -26,6 +26,7 @@ import com.majdus.organisateur.data.AppDatabase
 import com.majdus.organisateur.data.Note
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,6 +56,15 @@ class NoteEditor : AppCompatActivity() {
 
     /** Après suppression, plus rien ne doit être réécrit par l'enregistrement automatique. */
     private var discarded = false
+
+    /**
+     * Le corps a-t-il réellement été chargé dans le champ de saisie ?
+     *
+     * Tant que non, aucune écriture: un éditeur qui affiche un champ vide parce que le
+     * chargement n'a pas abouti — processus relancé, note très volumineuse — ne doit surtout
+     * pas conclure que la note est vide et la supprimer.
+     */
+    private var contentLoaded = false
 
     private var lastWritten: Snapshot? = null
 
@@ -94,17 +104,23 @@ class NoteEditor : AppCompatActivity() {
 
         setupFormatToolbar()
 
-        if (savedInstanceState == null) {
-            val requestedId = intent.getStringExtra(EXTRA_NOTE_ID)
-            noteId = requestedId ?: UUID.randomUUID().toString()
-            if (requestedId != null) loadNote(requestedId) else startWatching()
-        } else {
-            noteId = savedInstanceState.getString(STATE_ID) ?: UUID.randomUUID().toString()
+        val requestedId = if (savedInstanceState != null) {
             colorKey = savedInstanceState.getString(STATE_COLOR) ?: NoteColors.DEFAULT
             createdAt = savedInstanceState.getLong(STATE_CREATED_AT, createdAt)
             persisted = savedInstanceState.getBoolean(STATE_PERSISTED)
-            // Le texte et ses spans sont restaurés par le système: rien à relire en base,
-            // sinon on écraserait une saisie en cours.
+            savedInstanceState.getString(STATE_ID)
+        } else {
+            intent.getStringExtra(EXTRA_NOTE_ID)
+        }
+        noteId = requestedId ?: UUID.randomUUID().toString()
+
+        if (persisted || savedInstanceState == null && requestedId != null) {
+            // Le contenu est toujours relu en base, jamais restauré depuis l'état d'instance:
+            // un texte long n'y tient pas (limite des transactions Binder) et se retrouverait
+            // silencieusement vide.
+            loadNote(noteId)
+        } else {
+            contentLoaded = true
             startWatching()
         }
         applyColor()
@@ -128,22 +144,37 @@ class NoteEditor : AppCompatActivity() {
         // L'écriture est confiée à une portée indépendante de l'activité: partir par le bouton
         // d'accueil détruit la portée du cycle de vie, et la note serait perdue en chemin.
         val snapshot = snapshot()
-        backgroundSaves.launch { write(snapshot) }
+        pendingSave = backgroundSaves.launch { write(snapshot) }
     }
 
     private fun loadNote(id: String) {
         lifecycleScope.launch {
-            val note = withContext(Dispatchers.IO) { db.noteDao().getById(id) }
-            if (note != null) {
+            // Une sauvegarde de sortie peut encore être en vol (rotation): la laisser finir,
+            // sinon on relirait la version précédente du corps.
+            pendingSave?.join()
+            // Lecture par tranches: un corps de plusieurs mégaoctets ne passe pas par un
+            // `SELECT *`, la fenêtre du curseur SQLite étant plafonnée à 2 Mo. La conversion
+            // de l'AST reste elle aussi hors du fil principal: sur une note très longue, elle
+            // se compte en secondes.
+            val loaded = withContext(Dispatchers.IO) {
+                val note = db.noteDao().loadFullNote(id) ?: return@withContext null
+                note to RichTextParser.parseAstToSpannable(note.bodyAst)
+            }
+            if (loaded != null) {
+                val (note, body) = loaded
                 persisted = true
                 colorKey = note.color
                 createdAt = note.createdAt
                 titleView.setText(note.title)
-                bodyView.setText(RichTextParser.parseAstToSpannable(note.bodyAst))
+                bodyView.setText(body)
                 applyColor()
+            } else {
+                // La note n'existe plus (supprimée ailleurs): repartir d'un éditeur vierge.
+                persisted = false
             }
             // Les observateurs sont posés après le remplissage: sinon le chargement lui-même
             // compterait comme une modification.
+            contentLoaded = true
             startWatching()
             lastWritten = snapshot()
         }
@@ -170,18 +201,18 @@ class NoteEditor : AppCompatActivity() {
         }
     }
 
+    /**
+     * La suppression est déléguée à la liste: c'est elle qui affiche l'annulation, et faire
+     * transiter le corps de la note par une intention buterait sur la limite de 1 Mo des
+     * transactions Binder.
+     */
     private fun deleteAndFinish() {
         autoSave.removeCallbacks(autoSaveTask)
         discarded = true
-        lifecycleScope.launch {
-            val note = withContext(Dispatchers.IO) {
-                db.noteDao().getById(noteId)?.also { db.noteDao().delete(it) }
-            }
-            persisted = false
-            // Une note jamais enregistrée n'a rien à faire annuler.
-            setResult(RESULT_OK, note?.let(::deletedIntent) ?: Intent())
-            finish()
-        }
+        // Une note jamais enregistrée n'a rien à supprimer, ni à faire annuler.
+        val result = if (persisted) Intent().putExtra(EXTRA_DELETE_REQUEST, noteId) else Intent()
+        setResult(RESULT_OK, result)
+        finish()
     }
 
     /** Photographie de l'écran, prise sur le fil principal, seule à pouvoir lire les champs. */
@@ -197,13 +228,15 @@ class NoteEditor : AppCompatActivity() {
     }
 
     private suspend fun write(snapshot: Snapshot) {
-        if (discarded || snapshot == lastWritten) return
+        // contentLoaded: sans corps chargé, un champ vide ne veut rien dire — et surtout pas
+        // que la note doit être supprimée.
+        if (!contentLoaded || discarded || snapshot == lastWritten) return
         val dao = db.noteDao()
         withContext(Dispatchers.IO) {
             if (snapshot.isEmpty) {
                 // Rien à garder: une note vide ne mérite pas une carte dans la liste.
                 if (persisted) {
-                    dao.getById(noteId)?.let { dao.delete(it) }
+                    dao.deleteById(noteId)
                     persisted = false
                 }
             } else {
@@ -410,7 +443,7 @@ class NoteEditor : AppCompatActivity() {
 
     companion object {
         private const val EXTRA_NOTE_ID = "note_id"
-        private const val PREFIX_DELETED = "deleted_"
+        private const val EXTRA_DELETE_REQUEST = "delete_request_id"
         private const val STATE_ID = "state_id"
         private const val STATE_COLOR = "state_color"
         private const val STATE_CREATED_AT = "state_created_at"
@@ -433,32 +466,17 @@ class NoteEditor : AppCompatActivity() {
          */
         private val backgroundSaves = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+        /** Sauvegarde de sortie encore en vol; l'instance suivante l'attend avant de relire. */
+        @Volatile
+        private var pendingSave: Job? = null
+
         /** [noteId] nul pour une nouvelle note. */
         fun intent(context: Context, noteId: String?): Intent =
             Intent(context, NoteEditor::class.java).apply {
                 noteId?.let { putExtra(EXTRA_NOTE_ID, it) }
             }
 
-        private fun deletedIntent(note: Note): Intent = Intent().apply {
-            putExtra(PREFIX_DELETED + "id", note.id)
-            putExtra(PREFIX_DELETED + "title", note.title)
-            putExtra(PREFIX_DELETED + "body", note.bodyAst)
-            putExtra(PREFIX_DELETED + "color", note.color)
-            putExtra(PREFIX_DELETED + "created", note.createdAt)
-            putExtra(PREFIX_DELETED + "updated", note.updatedAt)
-        }
-
-        /** Note supprimée depuis l'éditeur, à proposer en annulation. */
-        fun deletedNote(data: Intent?): Note? {
-            val id = data?.getStringExtra(PREFIX_DELETED + "id") ?: return null
-            return Note(
-                id = id,
-                title = data.getStringExtra(PREFIX_DELETED + "title").orEmpty(),
-                bodyAst = data.getStringExtra(PREFIX_DELETED + "body").orEmpty(),
-                color = data.getStringExtra(PREFIX_DELETED + "color") ?: NoteColors.DEFAULT,
-                createdAt = data.getLongExtra(PREFIX_DELETED + "created", 0L),
-                updatedAt = data.getLongExtra(PREFIX_DELETED + "updated", 0L)
-            )
-        }
+        /** Identifiant de la note dont l'éditeur demande la suppression, s'il y en a une. */
+        fun deleteRequest(data: Intent?): String? = data?.getStringExtra(EXTRA_DELETE_REQUEST)
     }
 }

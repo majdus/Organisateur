@@ -63,6 +63,48 @@ object RichTextParser {
     }
 
     /**
+     * Relit un AST volontairement tronqué, tel que renvoyé par la requête d'aperçu de la liste
+     * des notes: le JSON s'arrête alors au milieu d'un tronçon. On repart du dernier tronçon
+     * complet, ce qui suffit largement pour un aperçu de carte.
+     */
+    fun parseAstPrefixToSpannable(json: String?): SpannableStringBuilder {
+        if (json.isNullOrEmpty()) return SpannableStringBuilder()
+        val trimmed = json.trimEnd()
+        if (trimmed.endsWith("]")) return parseAstToSpannable(trimmed)
+
+        val lastEnd = lastCompleteObjectEnd(trimmed)
+        if (lastEnd < 0) return SpannableStringBuilder()
+        return parseAstToSpannable(trimmed.substring(0, lastEnd + 1) + "]")
+    }
+
+    /**
+     * Position de l'accolade fermant le dernier tronçon complet. Le contenu des chaînes est
+     * ignoré: une accolade saisie dans le texte de la note ne doit pas passer pour une fin
+     * de tronçon.
+     */
+    private fun lastCompleteObjectEnd(json: String): Int {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        var lastEnd = -1
+        for (i in json.indices) {
+            val character = json[i]
+            when {
+                escaped -> escaped = false
+                inString && character == '\\' -> escaped = true
+                character == '"' -> inString = !inString
+                inString -> Unit
+                character == '{' -> depth++
+                character == '}' -> {
+                    depth--
+                    if (depth == 0) lastEnd = i
+                }
+            }
+        }
+        return lastEnd
+    }
+
+    /**
      * Convertit l'AST JSON en SpannableStringBuilder pour l'affichage dans l'EditText.
      */
     fun parseAstToSpannable(json: String?): SpannableStringBuilder {

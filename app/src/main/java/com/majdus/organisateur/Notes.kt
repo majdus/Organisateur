@@ -38,10 +38,14 @@ class Notes : AppCompatActivity() {
 
     private var firstLoad = true
 
-    /** L'éditeur renvoie la note qu'il vient de supprimer, pour que l'annulation reste possible. */
+    /**
+     * L'éditeur demande la suppression plutôt que de l'exécuter: la note supprimée reste ainsi
+     * en mémoire ici pour l'annulation, au lieu de transiter par une intention — dont la taille
+     * est plafonnée à 1 Mo, largement dépassable par une note volumineuse.
+     */
     private val editorLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            NoteEditor.deletedNote(result.data)?.let { showUndoDeleteSnackbar(it) }
+            NoteEditor.deleteRequest(result.data)?.let { delete(it) }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,7 +79,7 @@ class Notes : AppCompatActivity() {
             val cards = withContext(Dispatchers.IO) {
                 // La note unique des versions précédentes rejoint la collection au premier passage.
                 NoteMigration.migrateLegacyNote(this@Notes, db.noteDao())
-                db.noteDao().getAllNotes().map(::toCard)
+                db.noteDao().getAllNotesForList().map(::toCard)
             }
             noteAdapter.submitList(cards) { renderEmptyState(cards.isEmpty()) }
             summaryView.text = when (cards.size) {
@@ -92,9 +96,12 @@ class Notes : AppCompatActivity() {
         }
     }
 
-    /** Conversion faite hors du fil principal: elle parcourt le JSON de mise en forme. */
+    /**
+     * Conversion faite hors du fil principal: elle parcourt le JSON de mise en forme. Le corps
+     * arrive déjà tronqué par la requête, d'où la relecture tolérante au dernier tronçon coupé.
+     */
     private fun toCard(note: Note): NoteCard {
-        val body = RichTextParser.parseAstToSpannable(note.bodyAst)
+        val body = RichTextParser.parseAstPrefixToSpannable(note.bodyAst)
         val preview =
             if (body.length > PREVIEW_MAX_CHARS) body.subSequence(0, PREVIEW_MAX_CHARS) else body
         return NoteCard(
@@ -128,8 +135,10 @@ class Notes : AppCompatActivity() {
 
     private fun delete(id: String) {
         lifecycleScope.launch {
+            // Corps relu par tranches: une note très volumineuse doit rester supprimable,
+            // et surtout restaurable à l'identique.
             val note = withContext(Dispatchers.IO) {
-                db.noteDao().getById(id)?.also { db.noteDao().delete(it) }
+                db.noteDao().loadFullNote(id)?.also { db.noteDao().delete(it) }
             } ?: return@launch
             refresh()
             showUndoDeleteSnackbar(note)
