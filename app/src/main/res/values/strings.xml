@@ -20,4 +20,47 @@
     <string name="title_calendar">Calendrier</string>
     <string name="subtitle_calendar">Votre planning</string>
     <string name="type_your_notes_here">Tapez vos idées ici...</string>
+
+    <!-- Écran Rappels -->
+    <string name="alarms_title">Rappels</string>
+    <string name="alarms_back">Retour</string>
+    <string name="alarms_add">Nouveau rappel</string>
+    <string name="alarms_empty_title">Aucun rappel</string>
+    <string name="alarms_empty_subtitle">Créez un rappel quotidien pour ne jamais oublier ce qui compte.</string>
+    <string name="alarms_empty_action">Créer un rappel</string>
+    <string name="alarms_summary_none">Aucun rappel programmé</string>
+    <string name="alarms_summary_all_off">%1$s · aucun rappel actif</string>
+    <string name="alarms_summary_next">%1$s · prochain %2$s</string>
+    <string name="alarms_count_one">1 rappel</string>
+    <string name="alarms_count_other">%1$d rappels</string>
+
+    <string name="alarm_new_title">Nouveau rappel</string>
+    <string name="alarm_edit_title">Modifier le rappel</string>
+    <string name="alarm_sheet_hint">Appuyez sur l\'heure pour la modifier</string>
+    <string name="alarm_label_hint">Intitulé du rappel</string>
+    <string name="alarm_label_error">Donnez un intitulé à votre rappel</string>
+    <string name="alarm_time_picker_title">Heure du rappel</string>
+    <string name="alarm_save">Enregistrer</string>
+    <string name="alarm_delete">Supprimer</string>
+    <string name="alarm_switch_description">Activer le rappel</string>
+    <string name="alarm_item_description">Rappel %1$s à %2$s</string>
+    <string name="alarm_already_exists">Ce rappel existe déjà</string>
+
+    <string name="alarm_today">Aujourd\'hui</string>
+    <string name="alarm_tomorrow">Demain</string>
+    <string name="alarm_disabled">Désactivé</string>
+    <string name="alarm_in_less_than_a_minute">dans moins d\'une minute</string>
+    <string name="alarm_in_minutes">dans %1$d min</string>
+    <string name="alarm_in_hours">dans %1$d h</string>
+    <string name="alarm_in_hours_minutes">dans %1$d h %2$02d</string>
+    <string name="alarm_next_trigger">%1$s à %2$s · %3$s</string>
+    <string name="alarm_preview">Sonnera %1$s · %2$s</string>
+
+    <string name="alarm_created">Rappel programmé %1$s</string>
+    <string name="alarm_updated">Rappel mis à jour %1$s</string>
+    <string name="alarm_enabled_toast">Rappel programmé %1$s</string>
+    <string name="alarm_disabled_toast">Rappel désactivé</string>
+    <string name="alarm_deleted">Rappel supprimé</string>
+    <string name="alarm_undo">Annuler</string>
+    <string name="alarm_notification_text">Rappel de %1$s</string>
 </resources>

@@ -19,8 +19,9 @@
             android:name=".Calendrier"
             android:exported="false" />
         <activity
-            android:label="Alarms"
+            android:label="@string/alarms_title"
             android:name=".Alarms"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity
             android:label="Notes"

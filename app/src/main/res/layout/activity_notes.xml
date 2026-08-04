@@ -35,7 +35,8 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/note"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:background="@android:color/transparent"
             android:gravity="top|start"
             android:hint="Écrivez vos notes ici..."
@@ -45,6 +46,120 @@
             android:paddingVertical="16dp"
             android:textColor="#0F172A"
             android:textColorHint="#94A3B8" />
+
+        <!-- Barre d'outils de formatage contextuelle -->
+        <LinearLayout
+            android:id="@+id/format_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#F1F5F9"
+            android:padding="8dp"
+            android:gravity="center_vertical"
+            android:elevation="4dp">
+
+            <Button
+                android:id="@+id/btn_bold"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="B"
+                android:textStyle="bold"
+                android:textColor="#0F172A"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_italic"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="I"
+                android:textStyle="italic"
+                android:textColor="#0F172A"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="#CBD5E1"
+                android:layout_marginHorizontal="12dp"/>
+
+            <!-- Palette de couleurs dans un ScrollView pour les petits écrans -->
+            <HorizontalScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="4dp">
+
+                    <View
+                        android:id="@+id/btn_color_black"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/circle_bg"
+                        android:backgroundTint="#000000"
+                        android:clickable="true"
+                        android:focusable="true"/>
+
+                    <View
+                        android:id="@+id/btn_color_red"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/circle_bg"
+                        android:backgroundTint="#EF4444"
+                        android:clickable="true"
+                        android:focusable="true"/>
+
+                    <View
+                        android:id="@+id/btn_color_blue"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/circle_bg"
+                        android:backgroundTint="#3B82F6"
+                        android:clickable="true"
+                        android:focusable="true"/>
+
+                    <View
+                        android:id="@+id/btn_color_green"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/circle_bg"
+                        android:backgroundTint="#10B981"
+                        android:clickable="true"
+                        android:focusable="true"/>
+
+                    <View
+                        android:id="@+id/btn_color_orange"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/circle_bg"
+                        android:backgroundTint="#F59E0B"
+                        android:clickable="true"
+                        android:focusable="true"/>
+                        
+                    <View
+                        android:id="@+id/btn_color_purple"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/circle_bg"
+                        android:backgroundTint="#8B5CF6"
+                        android:clickable="true"
+                        android:focusable="true"/>
+
+                </LinearLayout>
+            </HorizontalScrollView>
+                
+        </LinearLayout>
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

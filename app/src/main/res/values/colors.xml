@@ -38,4 +38,18 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Design system "Pure Light": rôles sémantiques utilisés par l'écran Rappels -->
+    <color name="app_background">#F8FAFC</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="surface_muted">#F1F5F9</color>
+    <color name="border_subtle">#E2E8F0</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_tertiary">#94A3B8</color>
+    <color name="accent_indigo">#6366F1</color>
+    <color name="accent_violet">#8B5CF6</color>
+    <color name="accent_soft">#EEF2FF</color>
+    <color name="danger">#EF4444</color>
+    <color name="danger_soft">#FEF2F2</color>
 </resources>
