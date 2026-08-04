@@ -1,41 +1,48 @@
 package com.majdus.organisateur
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.graphics.Color
-import android.graphics.Typeface
+import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.text.Spannable
-import android.text.style.ForegroundColorSpan
-import android.text.style.StyleSpan
 import android.view.View
-import android.widget.EditText
+import android.view.animation.AnimationUtils
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.snackbar.Snackbar
+import com.majdus.organisateur.data.AppDatabase
+import com.majdus.organisateur.data.Note
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
- * Bloc-notes en texte enrichi.
+ * Liste des notes, en grille à hauteurs variables: une note de deux lignes n'a pas de raison
+ * d'occuper autant de place qu'une liste de courses complète.
  *
- * La note est enregistrée toute seule peu après la dernière frappe, et l'état de cette
- * sauvegarde est affiché en permanence sous le titre: aucun bouton « Enregistrer » à penser
- * à appuyer, aucune saisie perdue.
+ * L'écriture se fait dans [NoteEditor]; cet écran ne fait que présenter et supprimer.
  */
 class Notes : AppCompatActivity() {
 
-    private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var editText: EditText
-    private lateinit var statusView: TextView
+    private val db by lazy { AppDatabase.getDatabase(this) }
 
-    private val autoSave = Handler(Looper.getMainLooper())
-    private val autoSaveTask = Runnable { saveText() }
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var summaryView: TextView
+    private lateinit var emptyState: View
+    private lateinit var addButton: ExtendedFloatingActionButton
+    private lateinit var noteAdapter: NoteAdapter
 
-    private var isBoldActive = false
-    private var isItalicActive = false
-    private var activeColor: Int? = null
+    private var firstLoad = true
+
+    /** L'éditeur renvoie la note qu'il vient de supprimer, pour que l'annulation reste possible. */
+    private val editorLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            NoteEditor.deletedNote(result.data)?.let { showUndoDeleteSnackbar(it) }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,234 +51,106 @@ class Notes : AppCompatActivity() {
         findViewById<MaterialToolbar>(R.id.toolbar)
             .setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
-        sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        editText = findViewById(R.id.note)
-        statusView = findViewById(R.id.textStatus)
+        summaryView = findViewById(R.id.textSummary)
+        emptyState = findViewById(R.id.emptyState)
+        addButton = findViewById(R.id.addNote)
+        recyclerView = findViewById(R.id.notes)
 
-        setupFormatToolbar()
-        loadText()
+        noteAdapter = NoteAdapter(onClick = ::openEditor, onLongClick = ::confirmDelete)
+        recyclerView.adapter = noteAdapter
+        recyclerView.addOnScrollListener(FabScrollBehaviour(addButton))
 
-        editText.addTextChangedListener {
-            renderStatus(saved = false)
-            scheduleSave()
+        addButton.setOnClickListener { openEditor(null) }
+        findViewById<MaterialButton>(R.id.emptyAction).setOnClickListener { openEditor(null) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Retour de l'éditeur: la note vient peut-être d'être créée, modifiée ou vidée.
+        refresh()
+    }
+
+    private fun refresh() {
+        lifecycleScope.launch {
+            val cards = withContext(Dispatchers.IO) {
+                // La note unique des versions précédentes rejoint la collection au premier passage.
+                NoteMigration.migrateLegacyNote(this@Notes, db.noteDao())
+                db.noteDao().getAllNotes().map(::toCard)
+            }
+            noteAdapter.submitList(cards) { renderEmptyState(cards.isEmpty()) }
+            summaryView.text = when (cards.size) {
+                0 -> getString(R.string.notes_summary_none)
+                1 -> getString(R.string.notes_summary_one)
+                else -> getString(R.string.notes_summary_other, cards.size)
+            }
+            if (firstLoad && cards.isNotEmpty()) {
+                firstLoad = false
+                recyclerView.layoutAnimation =
+                    AnimationUtils.loadLayoutAnimation(this@Notes, R.anim.layout_animation_slide_up)
+                recyclerView.scheduleLayoutAnimation()
+            }
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        // Ne pas attendre le délai d'inactivité quand l'écran passe en arrière-plan.
-        autoSave.removeCallbacks(autoSaveTask)
-        saveText()
-    }
-
-    private fun scheduleSave() {
-        autoSave.removeCallbacks(autoSaveTask)
-        autoSave.postDelayed(autoSaveTask, AUTO_SAVE_DELAY_MS)
-    }
-
-    /** "Enregistré · 128 mots" — l'état de la note en une ligne. */
-    private fun renderStatus(saved: Boolean) {
-        val text = editText.text?.toString().orEmpty()
-        if (text.isBlank()) {
-            statusView.setText(R.string.notes_status_empty)
-            return
-        }
-        val words = text.trim().split(WORD_SEPARATORS).size
-        val wordsLabel = when (words) {
-            1 -> getString(R.string.notes_words_one)
-            else -> getString(R.string.notes_words_other, words)
-        }
-        statusView.text = getString(
-            if (saved) R.string.notes_status_saved else R.string.notes_status_editing,
-            wordsLabel
+    /** Conversion faite hors du fil principal: elle parcourt le JSON de mise en forme. */
+    private fun toCard(note: Note): NoteCard {
+        val body = RichTextParser.parseAstToSpannable(note.bodyAst)
+        val preview =
+            if (body.length > PREVIEW_MAX_CHARS) body.subSequence(0, PREVIEW_MAX_CHARS) else body
+        return NoteCard(
+            id = note.id,
+            title = note.title,
+            preview = preview.trim(),
+            colorKey = note.color,
+            updatedAt = note.updatedAt
         )
     }
 
-    private fun setupFormatToolbar() {
-        val boldButton = findViewById<View>(R.id.btn_bold)
-        val italicButton = findViewById<View>(R.id.btn_italic)
+    private fun renderEmptyState(isEmpty: Boolean) {
+        emptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        recyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        // L'état vide porte déjà son propre appel à l'action.
+        if (isEmpty) addButton.hide() else addButton.show()
+    }
 
-        boldButton.setOnClickListener {
-            isBoldActive = !isBoldActive
-            boldButton.isSelected = isBoldActive
-            toggleStyleForTyping(Typeface.BOLD, isBoldActive)
-            onFormattingChanged()
-        }
-        italicButton.setOnClickListener {
-            isItalicActive = !isItalicActive
-            italicButton.isSelected = isItalicActive
-            toggleStyleForTyping(Typeface.ITALIC, isItalicActive)
-            onFormattingChanged()
-        }
+    private fun openEditor(note: NoteCard?) {
+        editorLauncher.launch(NoteEditor.intent(this, note?.id))
+    }
 
-        for ((id, hex) in COLORS) {
-            findViewById<View>(id).setOnClickListener {
-                toggleColor(it, Color.parseColor(hex))
-            }
+    private fun confirmDelete(note: NoteCard) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.note_delete_title)
+            .setMessage(note.title.ifBlank { getString(R.string.note_untitled) })
+            .setPositiveButton(R.string.action_delete) { _, _ -> delete(note.id) }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun delete(id: String) {
+        lifecycleScope.launch {
+            val note = withContext(Dispatchers.IO) {
+                db.noteDao().getById(id)?.also { db.noteDao().delete(it) }
+            } ?: return@launch
+            refresh()
+            showUndoDeleteSnackbar(note)
         }
     }
 
-    /**
-     * Poser un span ne modifie pas le texte: les observateurs de saisie ne se déclenchent
-     * pas, il faut donc redéclencher l'enregistrement à la main.
-     */
-    private fun onFormattingChanged() {
-        renderStatus(saved = false)
-        scheduleSave()
-    }
-
-    private fun toggleColor(view: View, color: Int) {
-        if (activeColor == color) {
-            activeColor = null
-            view.isSelected = false
-            view.setBackgroundResource(0)
-            toggleColorForTyping(color, false)
-        } else {
-            // Une seule couleur active à la fois: l'anneau de sélection quitte les autres.
-            for (id in COLORS.keys) {
-                findViewById<View>(id).apply {
-                    isSelected = false
-                    setBackgroundResource(0)
+    private fun showUndoDeleteSnackbar(note: Note) {
+        Snackbar.make(findViewById(R.id.rootLayout), R.string.note_deleted, Snackbar.LENGTH_LONG)
+            .setAnchorView(if (addButton.isShown) addButton else null)
+            .setAction(R.string.action_undo) {
+                lifecycleScope.launch {
+                    // Réinsérée telle quelle: même identifiant, même date, donc même place.
+                    withContext(Dispatchers.IO) { db.noteDao().insert(note) }
+                    refresh()
                 }
             }
-            activeColor = color
-            view.isSelected = true
-            view.setBackgroundResource(R.drawable.bg_swatch_ring)
-            toggleColorForTyping(color, true)
-        }
-        onFormattingChanged()
-    }
-
-    private fun toggleStyleForTyping(style: Int, activate: Boolean) {
-        val start = editText.selectionStart
-        val end = editText.selectionEnd
-        if (start < 0 || end < 0) return
-        val spannable = editText.text as? Spannable ?: return
-
-        if (start != end) {
-            if (activate) {
-                spannable.setSpan(StyleSpan(style), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            } else {
-                // L'utilisateur veut retirer le style sur la sélection: les spans existants
-                // sont coupés s'ils débordent de celle-ci.
-                val existingSpans = spannable.getSpans(start, end, StyleSpan::class.java)
-                    .filter { it.style == style }
-                for (span in existingSpans) {
-                    val spanStart = spannable.getSpanStart(span)
-                    val spanEnd = spannable.getSpanEnd(span)
-                    val flags = spannable.getSpanFlags(span)
-                    spannable.removeSpan(span)
-
-                    if (spanStart < start) {
-                        spannable.setSpan(StyleSpan(style), spanStart, start, flags)
-                    }
-                    if (spanEnd > end) {
-                        spannable.setSpan(StyleSpan(style), end, spanEnd, flags)
-                    }
-                }
-            }
-            return
-        }
-
-        if (activate) {
-            spannable.setSpan(StyleSpan(style), start, start, Spannable.SPAN_INCLUSIVE_INCLUSIVE)
-        } else {
-            val spans = spannable.getSpans(start, start, StyleSpan::class.java)
-            for (span in spans) {
-                if (span.style == style &&
-                    spannable.getSpanFlags(span) == Spannable.SPAN_INCLUSIVE_INCLUSIVE
-                ) {
-                    val spanStart = spannable.getSpanStart(span)
-                    spannable.removeSpan(span)
-                    if (spanStart < start) {
-                        spannable.setSpan(span, spanStart, start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun toggleColorForTyping(color: Int, activate: Boolean) {
-        val start = editText.selectionStart
-        val end = editText.selectionEnd
-        if (start < 0 || end < 0) return
-        val spannable = editText.text as? Spannable ?: return
-
-        if (start != end) {
-            if (activate) {
-                spannable.setSpan(ForegroundColorSpan(color), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            } else {
-                val existingSpans = spannable.getSpans(start, end, ForegroundColorSpan::class.java)
-                    .filter { it.foregroundColor == color }
-                for (span in existingSpans) {
-                    val spanStart = spannable.getSpanStart(span)
-                    val spanEnd = spannable.getSpanEnd(span)
-                    val flags = spannable.getSpanFlags(span)
-                    spannable.removeSpan(span)
-
-                    if (spanStart < start) {
-                        spannable.setSpan(ForegroundColorSpan(color), spanStart, start, flags)
-                    }
-                    if (spanEnd > end) {
-                        spannable.setSpan(ForegroundColorSpan(color), end, spanEnd, flags)
-                    }
-                }
-            }
-            return
-        }
-
-        if (activate) {
-            spannable.setSpan(ForegroundColorSpan(color), start, start, Spannable.SPAN_INCLUSIVE_INCLUSIVE)
-        } else {
-            val spans = spannable.getSpans(start, start, ForegroundColorSpan::class.java)
-            for (span in spans) {
-                if (span.foregroundColor == color &&
-                    spannable.getSpanFlags(span) == Spannable.SPAN_INCLUSIVE_INCLUSIVE
-                ) {
-                    val spanStart = spannable.getSpanStart(span)
-                    spannable.removeSpan(span)
-                    if (spanStart < start) {
-                        spannable.setSpan(span, spanStart, start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun loadText() {
-        val astJson = sharedPreferences.getString(KEY_NOTE_AST, null)
-        if (astJson.isNullOrEmpty()) {
-            editText.setText(sharedPreferences.getString(KEY_NOTE, ""))
-        } else {
-            editText.setText(RichTextParser.parseAstToSpannable(astJson))
-        }
-        renderStatus(saved = true)
-    }
-
-    private fun saveText() {
-        with(sharedPreferences.edit()) {
-            putString(KEY_NOTE, editText.text.toString())
-            putString(KEY_NOTE_AST, RichTextParser.generateAstJsonFromSpannable(editText.text))
-            apply()
-        }
-        renderStatus(saved = true)
+            .show()
     }
 
     private companion object {
-        const val PREFS_NAME = "organisateur"
-        const val KEY_NOTE = "note"
-        const val KEY_NOTE_AST = "note_ast"
-        const val AUTO_SAVE_DELAY_MS = 700L
-        val WORD_SEPARATORS = Regex("\\s+")
-
-        /** Palette de mise en forme, alignée sur les pastilles de la barre d'outils. */
-        val COLORS = mapOf(
-            R.id.btn_color_black to "#0F172A",
-            R.id.btn_color_red to "#EF4444",
-            R.id.btn_color_blue to "#3B82F6",
-            R.id.btn_color_green to "#10B981",
-            R.id.btn_color_orange to "#F59E0B",
-            R.id.btn_color_purple to "#8B5CF6"
-        )
+        /** Au-delà, l'aperçu déborde de toute façon de la carte. */
+        const val PREVIEW_MAX_CHARS = 400
     }
 }

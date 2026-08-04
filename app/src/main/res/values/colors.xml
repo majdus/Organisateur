@@ -63,4 +63,12 @@
     <color name="accent_alarms_soft">#EEF2FF</color>
     <color name="accent_calendar">#F59E0B</color>
     <color name="accent_calendar_soft">#FFFBEB</color>
+
+    <!-- Fonds de note: assez pâles pour que le texte reste en text_primary sur chacun. -->
+    <color name="note_default">#FFFFFF</color>
+    <color name="note_yellow">#FEF9C3</color>
+    <color name="note_green">#DCFCE7</color>
+    <color name="note_blue">#DBEAFE</color>
+    <color name="note_pink">#FCE7F3</color>
+    <color name="note_purple">#F3E8FF</color>
 </resources>

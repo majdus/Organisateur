@@ -26,6 +26,10 @@
         <activity
             android:label="Notes"
             android:name=".Notes"
+            android:exported="false" />
+        <activity
+            android:label="Notes"
+            android:name=".NoteEditor"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity

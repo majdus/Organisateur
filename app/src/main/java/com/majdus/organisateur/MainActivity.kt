@@ -32,9 +32,6 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private val db by lazy { AppDatabase.getDatabase(this) }
-    private val notesPreferences by lazy {
-        getSharedPreferences(NOTES_PREFS, Context.MODE_PRIVATE)
-    }
 
     private lateinit var tilesView: RecyclerView
     private lateinit var greetingView: TextView
@@ -100,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         val today = DATE_KEY_FORMAT.format(Date())
         return Counts(
             pendingTasks = db.taskDao().countPending(),
-            noteWords = countWords(notesPreferences.getString(NOTES_KEY, "").orEmpty()),
+            notes = db.noteDao().countNotes(),
             activeAlarms = AlarmRepository(this).load().count { it.enabled },
             todayEvents = db.eventDao().countByDate(today)
         )
@@ -129,10 +126,10 @@ class MainActivity : AppCompatActivity() {
             accentRes = R.color.accent_notes,
             accentSoftRes = R.color.accent_notes_soft,
             count = quantity(
-                counts.noteWords,
-                R.string.home_notes_empty,
-                R.string.home_notes_words_one,
-                R.string.home_notes_words_other
+                counts.notes,
+                R.string.home_notes_none,
+                R.string.home_notes_one,
+                R.string.home_notes_other
             )
         ),
         HomeTile(
@@ -171,9 +168,6 @@ class MainActivity : AppCompatActivity() {
         else -> getString(otherRes, value)
     }
 
-    private fun countWords(text: String): Int =
-        if (text.isBlank()) 0 else text.trim().split(WORD_SEPARATORS).size
-
     private fun openFeature(tile: HomeTile) {
         val target = when (tile.id) {
             HomeAdapter.TASKS -> TaskList::class.java
@@ -196,7 +190,7 @@ class MainActivity : AppCompatActivity() {
         // démarrage éjecte hors de l'application un utilisateur qui a déjà refusé.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val prefs = getSharedPreferences(NOTES_PREFS, Context.MODE_PRIVATE)
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val alreadyAsked = prefs.getBoolean(KEY_EXACT_ALARM_ASKED, false)
             if (!alarmManager.canScheduleExactAlarms() && !alreadyAsked) {
                 prefs.edit().putBoolean(KEY_EXACT_ALARM_ASKED, true).apply()
@@ -209,16 +203,14 @@ class MainActivity : AppCompatActivity() {
 
     private data class Counts(
         val pendingTasks: Int,
-        val noteWords: Int,
+        val notes: Int,
         val activeAlarms: Int,
         val todayEvents: Int
     )
 
     companion object {
-        private const val NOTES_PREFS = "organisateur"
-        private const val NOTES_KEY = "note"
+        private const val PREFS_NAME = "organisateur"
         private const val KEY_EXACT_ALARM_ASKED = "exact_alarm_asked"
-        private val WORD_SEPARATORS = Regex("\\s+")
         private val DAY_FORMAT = SimpleDateFormat("EEEE d MMMM", Locale.FRANCE)
         private val DATE_KEY_FORMAT = SimpleDateFormat("yyyy-MM-dd", Locale.FRANCE)
     }

@@ -21,7 +21,7 @@
     <string name="title_tasks">Tâches</string>
     <string name="subtitle_tasks">Vos priorités</string>
     <string name="title_notes">Notes</string>
-    <string name="subtitle_notes">Idées et brouillons</string>
+    <string name="subtitle_notes">Idées et listes</string>
     <string name="title_alarms">Rappels</string>
     <string name="subtitle_alarms">Ne rien oublier</string>
     <string name="title_calendar">Calendrier</string>
@@ -30,9 +30,9 @@
     <string name="home_tasks_none">Rien à faire</string>
     <string name="home_tasks_one">1 à faire</string>
     <string name="home_tasks_other">%1$d à faire</string>
-    <string name="home_notes_empty">Vide</string>
-    <string name="home_notes_words_one">1 mot</string>
-    <string name="home_notes_words_other">%1$d mots</string>
+    <string name="home_notes_none">Aucune note</string>
+    <string name="home_notes_one">1 note</string>
+    <string name="home_notes_other">%1$d notes</string>
     <string name="home_alarms_none">Aucun actif</string>
     <string name="home_alarms_one">1 actif</string>
     <string name="home_alarms_other">%1$d actifs</string>
@@ -100,12 +100,28 @@
 
     <!-- ===== Notes ===== -->
     <string name="notes_title">Notes</string>
+    <string name="notes_add">Nouvelle note</string>
+    <string name="notes_summary_none">Aucune note</string>
+    <string name="notes_summary_one">1 note</string>
+    <string name="notes_summary_other">%1$d notes</string>
+    <string name="notes_empty_title">Aucune note</string>
+    <string name="notes_empty_subtitle">Une idée, une liste, un brouillon : gardez-les ici plutôt que dans un coin de votre tête.</string>
+    <string name="notes_empty_action">Créer une note</string>
+
+    <string name="note_title_hint">Titre</string>
     <string name="notes_hint">Écrivez ce qui vous passe par la tête…</string>
-    <string name="notes_status_empty">Bloc-notes vide</string>
-    <string name="notes_status_saved">Enregistré · %1$s</string>
-    <string name="notes_status_editing">Modification en cours · %1$s</string>
-    <string name="notes_words_one">1 mot</string>
-    <string name="notes_words_other">%1$d mots</string>
+    <string name="note_untitled">Sans titre</string>
+    <string name="note_item_description">Note %1$s</string>
+    <string name="note_delete_title">Supprimer cette note ?</string>
+    <string name="note_deleted">Note supprimée</string>
+    <string name="note_color_action">Couleur de la note</string>
+    <string name="note_color_default">Blanc</string>
+    <string name="note_color_yellow">Jaune</string>
+    <string name="note_color_green">Vert</string>
+    <string name="note_color_blue">Bleu</string>
+    <string name="note_color_pink">Rose</string>
+    <string name="note_color_purple">Violet</string>
+
     <string name="notes_format_bold">Gras</string>
     <string name="notes_format_italic">Italique</string>
     <string name="notes_color_black">Noir</string>
