@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Task::class, Alarm::class, Event::class, Note::class],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -42,6 +42,49 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Ordre manuel des notes. La colonne est remplie d'après le tri qui était appliqué
+         * jusqu'ici — la note touchée le plus récemment en tête, départage par identifiant pour
+         * ne rien laisser d'indéterminé: à la première ouverture après mise à jour, la grille est
+         * exactement dans l'état où l'utilisateur l'a laissée.
+         */
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `notes` ADD COLUMN `position` INTEGER NOT NULL DEFAULT 0"
+                )
+                database.execSQL(
+                    "UPDATE `notes` SET `position` = (" +
+                            "SELECT COUNT(*) FROM `notes` AS other " +
+                            "WHERE other.updatedAt > notes.updatedAt " +
+                            "OR (other.updatedAt = notes.updatedAt AND other.id < notes.id))"
+                )
+            }
+        }
+
+        /**
+         * Ordre manuel des tâches, par importance. Même principe que pour les notes: la colonne
+         * est remplie d'après le tri appliqué jusqu'ici — les tâches restantes d'abord, puis les
+         * plus anciennes, départage par identifiant — pour que la liste soit inchangée à la
+         * première ouverture après mise à jour.
+         */
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `tasks` ADD COLUMN `position` INTEGER NOT NULL DEFAULT 0"
+                )
+                database.execSQL(
+                    "UPDATE `tasks` SET `position` = (" +
+                            "SELECT COUNT(*) FROM `tasks` AS other " +
+                            "WHERE other.isCompleted < tasks.isCompleted " +
+                            "OR (other.isCompleted = tasks.isCompleted " +
+                            "AND other.timestamp < tasks.timestamp) " +
+                            "OR (other.isCompleted = tasks.isCompleted " +
+                            "AND other.timestamp = tasks.timestamp AND other.id < tasks.id))"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -49,7 +92,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "organisateur_database"
                 )
-                .addMigrations(MIGRATION_3_4)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 // Filet pour les chemins de version imprévus uniquement: toute évolution de
                 // schéma doit venir avec sa migration, sinon les données partent.
                 .fallbackToDestructiveMigration()

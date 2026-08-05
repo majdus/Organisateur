@@ -56,10 +56,10 @@
         android:clipToPadding="false"
         android:paddingHorizontal="16dp"
         android:paddingBottom="104dp"
-        app:layoutManager="androidx.recyclerview.widget.StaggeredGridLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        app:spanCount="2"
-        tools:listitem="@layout/item_note" />
+        tools:layoutManager="androidx.recyclerview.widget.StaggeredGridLayoutManager"
+        tools:listitem="@layout/item_note"
+        tools:spanCount="2" />
 
     <LinearLayout
         android:id="@+id/emptyState"

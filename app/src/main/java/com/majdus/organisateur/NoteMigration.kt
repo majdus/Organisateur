@@ -31,7 +31,8 @@ object NoteMigration {
         }
 
         if (bodyAst != null) {
-            noteDao.insert(Note(bodyAst = bodyAst))
+            // En tête de grille, comme toute note nouvellement ajoutée à la collection.
+            noteDao.insert(Note(bodyAst = bodyAst, position = (noteDao.minPosition() ?: 0) - 1))
         }
 
         // Le drapeau est posé même sans note à reprendre: cela évite de relire ces clés à chaque

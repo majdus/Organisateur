@@ -128,11 +128,15 @@ class TaskEditSheet : BottomSheetDialogFragment() {
 
         fun isNew(result: Bundle): Boolean = readTask(result, PREFIX_ORIGINAL) == null
 
+        // Le rang fait l'aller-retour comme les autres champs: la feuille renvoie une tâche
+        // reconstruite de toutes pièces, et l'oublier ici la ferait remonter en tête de liste
+        // à la moindre modification.
         private fun writeTask(bundle: Bundle, prefix: String, task: Task) {
             bundle.putString(prefix + "id", task.id)
             bundle.putString(prefix + "title", task.title)
             bundle.putBoolean(prefix + "completed", task.isCompleted)
             bundle.putLong(prefix + "timestamp", task.timestamp)
+            bundle.putInt(prefix + "position", task.position)
         }
 
         private fun readTask(bundle: Bundle, prefix: String): Task? {
@@ -141,7 +145,8 @@ class TaskEditSheet : BottomSheetDialogFragment() {
                 id = id,
                 title = bundle.getString(prefix + "title").orEmpty(),
                 isCompleted = bundle.getBoolean(prefix + "completed"),
-                timestamp = bundle.getLong(prefix + "timestamp")
+                timestamp = bundle.getLong(prefix + "timestamp"),
+                position = bundle.getInt(prefix + "position")
             )
         }
     }

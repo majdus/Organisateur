@@ -15,7 +15,10 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 import com.google.android.material.snackbar.Snackbar
 import com.majdus.organisateur.data.AppDatabase
 import com.majdus.organisateur.data.Task
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -25,6 +28,10 @@ import kotlinx.coroutines.withContext
  * L'activité orchestre: la base Room détient l'état, [TaskEditSheet] la saisie. Toute
  * suppression passe par un Snackbar « Annuler » plutôt que par une boîte de confirmation —
  * une action réversible n'a pas besoin d'être confirmée à l'avance.
+ *
+ * L'ordre de la liste appartient à l'utilisateur: un appui long soulève une tâche et la repose
+ * où il veut, pour ranger par importance. Les tâches terminées restent groupées en bas, et le
+ * déplacement ne franchit pas cette frontière.
  */
 class TaskList : AppCompatActivity() {
 
@@ -54,8 +61,16 @@ class TaskList : AppCompatActivity() {
         recyclerView.adapter = taskAdapter
         // Cocher une case ne doit pas provoquer de fondu sur la carte.
         (recyclerView.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
-        ItemTouchHelper(SwipeToDeleteCallback(this, ::onSwipeDelete))
-            .attachToRecyclerView(recyclerView)
+        ItemTouchHelper(
+            TaskReorderCallback(
+                context = this,
+                onSwiped = ::onSwipeDelete,
+                onMoved = taskAdapter::moveItem,
+                isSameGroup = ::isSameGroup,
+                onDragStarted = { addButton.hide() },
+                onDragFinished = ::onDragFinished
+            )
+        ).attachToRecyclerView(recyclerView)
         recyclerView.addOnScrollListener(FabScrollBehaviour(addButton))
 
         addButton.setOnClickListener { openEditor(null) }
@@ -68,10 +83,35 @@ class TaskList : AppCompatActivity() {
         refresh()
     }
 
+    /**
+     * Deux tâches appartiennent-elles au même groupe ? Une tâche restante ne se dépose pas parmi
+     * les terminées: cette frontière relève de la case à cocher.
+     */
+    private fun isSameGroup(from: Int, to: Int): Boolean {
+        val moved = taskAdapter.itemAt(from) ?: return false
+        val target = taskAdapter.itemAt(to) ?: return false
+        return moved.isCompleted == target.isCompleted
+    }
+
+    /**
+     * Carte relâchée: l'ordre affiché devient l'ordre enregistré.
+     *
+     * L'écriture est retenue dans [orderWrite] et attendue par [refresh]: relire la base avant
+     * que l'ordre y soit posé ferait ressauter la carte à son ancienne place.
+     */
+    private fun onDragFinished() {
+        addButton.show()
+        val orderedIds = taskAdapter.currentOrderIds()
+        val dao = db.taskDao()
+        orderWrite = backgroundOrderWrites.launch { dao.applyOrder(orderedIds) }
+    }
+
     private fun refresh(after: () -> Unit = {}) {
         lifecycleScope.launch {
+            orderWrite?.join()
             val tasks = withContext(Dispatchers.IO) { db.taskDao().getAllTasks() }
-            taskAdapter.submitList(tasks) { renderEmptyState(tasks.isEmpty()) }
+            taskAdapter.submit(tasks)
+            renderEmptyState(tasks.isEmpty())
             summaryView.text = summaryOf(tasks)
             if (firstLoad && tasks.isNotEmpty()) {
                 firstLoad = false
@@ -121,7 +161,15 @@ class TaskList : AppCompatActivity() {
                 write(
                     message = getString(if (isNew) R.string.task_created else R.string.task_updated)
                 ) {
-                    if (isNew) db.taskDao().insert(task) else db.taskDao().update(task)
+                    val dao = db.taskDao()
+                    if (isNew) {
+                        // Une tâche qui vient d'être écrite se pose en fin de liste, comme le
+                        // faisait le tri par date de création: on ajoute au bas de ce qu'on a
+                        // déjà à faire, on ne s'impose pas en tête.
+                        dao.insert(task.copy(position = (dao.maxPosition() ?: -1) + 1))
+                    } else {
+                        dao.update(task)
+                    }
                 }
             }
         }
@@ -134,14 +182,14 @@ class TaskList : AppCompatActivity() {
     }
 
     private fun onSwipeDelete(position: Int) {
-        val task = taskAdapter.currentList.getOrNull(position) ?: return
+        val task = taskAdapter.itemAt(position) ?: return
         deleteTask(task)
     }
 
     private fun deleteTask(task: Task) {
         write(message = null) { db.taskDao().delete(task) }
-        // L'annulation réinsère la tâche telle quelle (même identifiant, même horodatage):
-        // elle retrouve donc exactement sa place dans la liste.
+        // L'annulation réinsère la tâche telle quelle, son rang compris: elle retrouve donc
+        // exactement sa place dans la liste, et non le bas de la pile.
         snackbar(getString(R.string.task_deleted))
             .setAction(R.string.action_undo) {
                 write(message = null) { db.taskDao().insert(task) }
@@ -167,5 +215,15 @@ class TaskList : AppCompatActivity() {
 
     companion object {
         private const val TAG_EDIT_SHEET = "task_edit_sheet"
+
+        /**
+         * Portée détachée du cycle de vie, comme pour les notes: déposer une carte puis quitter
+         * l'écran aussitôt ne doit pas faire perdre le rangement.
+         */
+        private val backgroundOrderWrites = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+        /** Enregistrement de l'ordre encore en vol; toute relecture de la base l'attend. */
+        @Volatile
+        private var orderWrite: Job? = null
     }
 }

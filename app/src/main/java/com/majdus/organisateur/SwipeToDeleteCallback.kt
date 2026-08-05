@@ -14,8 +14,12 @@ import kotlin.math.min
  * Balayage vers la gauche pour supprimer un rappel. Le fond rouge est dessiné exactement
  * aux dimensions de la carte (l'`itemView` exclut déjà ses marges), avec le même rayon de
  * coin, pour que la révélation reste alignée au design des cartes.
+ *
+ * Ouverte à la dérivation pour [TaskReorderCallback], qui ajoute le déplacement vertical sans
+ * rien changer au balayage — les deux gestes cohabitent, l'un partant d'un appui long et l'autre
+ * d'un mouvement latéral.
  */
-class SwipeToDeleteCallback(
+open class SwipeToDeleteCallback(
     context: Context,
     private val onSwiped: (position: Int) -> Unit
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {

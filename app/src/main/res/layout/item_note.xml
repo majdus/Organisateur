@@ -9,6 +9,7 @@
     android:layout_margin="8dp"
     android:clickable="true"
     android:focusable="true"
+    android:minHeight="120dp"
     app:cardCornerRadius="20dp"
     app:rippleColor="#148B5CF6">
 
@@ -36,7 +37,7 @@
             android:layout_marginTop="6dp"
             android:ellipsize="end"
             android:lineSpacingExtra="3dp"
-            android:maxLines="8"
+            android:maxLines="6"
             android:textColor="@color/text_secondary"
             android:textSize="14sp"
             tools:text="Pain, lait, œufs, café, farine et un peu de levure" />

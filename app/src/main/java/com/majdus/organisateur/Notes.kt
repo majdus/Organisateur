@@ -8,15 +8,20 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.majdus.organisateur.data.AppDatabase
 import com.majdus.organisateur.data.Note
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -24,7 +29,12 @@ import kotlinx.coroutines.withContext
  * Liste des notes, en grille à hauteurs variables: une note de deux lignes n'a pas de raison
  * d'occuper autant de place qu'une liste de courses complète.
  *
- * L'écriture se fait dans [NoteEditor]; cet écran ne fait que présenter et supprimer.
+ * L'ordre des tuiles appartient à l'utilisateur: un appui long soulève une note et la repose où
+ * il veut, et rien ne la déplace ensuite dans son dos — modifier une note ne la fait plus remonter.
+ *
+ * L'écriture se fait dans [NoteEditor], qui porte aussi la suppression: l'appui long étant pris
+ * par le déplacement, cet écran ne fait que présenter, réorganiser, et offrir l'annulation d'une
+ * suppression demandée depuis l'éditeur.
  */
 class Notes : AppCompatActivity() {
 
@@ -60,9 +70,36 @@ class Notes : AppCompatActivity() {
         addButton = findViewById(R.id.addNote)
         recyclerView = findViewById(R.id.notes)
 
-        noteAdapter = NoteAdapter(onClick = ::openEditor, onLongClick = ::confirmDelete)
+        noteAdapter = NoteAdapter(onClick = ::openEditor)
+        recyclerView.layoutManager = StaggeredGridLayoutManager(
+            SPAN_COUNT,
+            StaggeredGridLayoutManager.VERTICAL
+        ).apply {
+            // Comblement des trous laissé actif, à dessein: chaque tuile va dans la colonne la
+            // plus courte et la grille reste tassée en haut, sans creux. Le désactiver évitait
+            // bien quelques mouvements de colonne pendant le glisser, mais laissait après coup
+            // des affectations de colonne périmées — une tuile en haut à droite, sa voisine
+            // décalée en dessous à gauche, et un trou en haut à gauche. Une grille qui se
+            // réorganise vaut mieux qu'une grille trouée.
+            gapStrategy = StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS
+        }
         recyclerView.adapter = noteAdapter
         recyclerView.addOnScrollListener(FabScrollBehaviour(addButton))
+
+        (recyclerView.itemAnimator as? DefaultItemAnimator)?.apply {
+            moveDuration = REORDER_DURATION_MS
+            // Le contenu des tuiles ne change pas quand on réorganise: un fondu croisé n'aurait
+            // rien à dire, et brouillerait le déplacement.
+            supportsChangeAnimations = false
+        }
+
+        ItemTouchHelper(
+            NoteDragCallback(
+                onMoved = noteAdapter::moveItem,
+                onDragStarted = { addButton.hide() },
+                onDragFinished = ::onDragFinished
+            )
+        ).attachToRecyclerView(recyclerView)
 
         addButton.setOnClickListener { openEditor(null) }
         findViewById<MaterialButton>(R.id.emptyAction).setOnClickListener { openEditor(null) }
@@ -74,14 +111,30 @@ class Notes : AppCompatActivity() {
         refresh()
     }
 
+    /**
+     * Tuile relâchée: l'ordre affiché devient l'ordre enregistré.
+     *
+     * L'écriture est retenue dans [orderWrite] et attendue par [refresh]: relire la base avant
+     * que l'ordre y soit posé ferait ressauter la tuile à son ancienne place, sous les yeux de
+     * l'utilisateur.
+     */
+    private fun onDragFinished() {
+        addButton.show()
+        val orderedIds = noteAdapter.currentOrderIds()
+        val dao = db.noteDao()
+        orderWrite = backgroundOrderWrites.launch { dao.applyOrder(orderedIds) }
+    }
+
     private fun refresh() {
         lifecycleScope.launch {
+            orderWrite?.join()
             val cards = withContext(Dispatchers.IO) {
                 // La note unique des versions précédentes rejoint la collection au premier passage.
                 NoteMigration.migrateLegacyNote(this@Notes, db.noteDao())
                 db.noteDao().getAllNotesForList().map(::toCard)
             }
-            noteAdapter.submitList(cards) { renderEmptyState(cards.isEmpty()) }
+            noteAdapter.submit(cards)
+            renderEmptyState(cards.isEmpty())
             summaryView.text = when (cards.size) {
                 0 -> getString(R.string.notes_summary_none)
                 1 -> getString(R.string.notes_summary_one)
@@ -124,15 +177,6 @@ class Notes : AppCompatActivity() {
         editorLauncher.launch(NoteEditor.intent(this, note?.id))
     }
 
-    private fun confirmDelete(note: NoteCard) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.note_delete_title)
-            .setMessage(note.title.ifBlank { getString(R.string.note_untitled) })
-            .setPositiveButton(R.string.action_delete) { _, _ -> delete(note.id) }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
     private fun delete(id: String) {
         lifecycleScope.launch {
             // Corps relu par tranches: une note très volumineuse doit rester supprimable,
@@ -150,7 +194,8 @@ class Notes : AppCompatActivity() {
             .setAnchorView(if (addButton.isShown) addButton else null)
             .setAction(R.string.action_undo) {
                 lifecycleScope.launch {
-                    // Réinsérée telle quelle: même identifiant, même date, donc même place.
+                    // Réinsérée telle quelle, son rang compris: elle retrouve sa place exacte
+                    // dans la grille, et non la tête de liste.
                     withContext(Dispatchers.IO) { db.noteDao().insert(note) }
                     refresh()
                 }
@@ -161,5 +206,20 @@ class Notes : AppCompatActivity() {
     private companion object {
         /** Au-delà, l'aperçu déborde de toute façon de la carte. */
         const val PREVIEW_MAX_CHARS = 400
+
+        const val SPAN_COUNT = 2
+
+        /** Assez court pour suivre le doigt, assez long pour que l'œil suive les tuiles. */
+        const val REORDER_DURATION_MS = 180L
+
+        /**
+         * Portée détachée du cycle de vie, comme pour les sauvegardes de l'éditeur: déposer une
+         * tuile puis quitter l'écran aussitôt ne doit pas faire perdre le rangement.
+         */
+        val backgroundOrderWrites = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+        /** Enregistrement de l'ordre encore en vol; toute relecture de la base l'attend. */
+        @Volatile
+        var orderWrite: Job? = null
     }
 }

@@ -51,6 +51,13 @@ class NoteEditor : AppCompatActivity() {
     private var colorKey: String = NoteColors.DEFAULT
     private var createdAt: Long = System.currentTimeMillis()
 
+    /**
+     * Rang de la note dans la grille. Conservé au même titre que [createdAt]: chaque sauvegarde
+     * réécrit la ligne entière, et repartir de zéro renverrait la note en tête de grille à la
+     * première frappe — exactement ce que l'ordre manuel doit empêcher.
+     */
+    private var position: Int = 0
+
     /** La note existe-t-elle en base ? Faux tant que rien n'a été écrit. */
     private var persisted = false
 
@@ -107,6 +114,7 @@ class NoteEditor : AppCompatActivity() {
         val requestedId = if (savedInstanceState != null) {
             colorKey = savedInstanceState.getString(STATE_COLOR) ?: NoteColors.DEFAULT
             createdAt = savedInstanceState.getLong(STATE_CREATED_AT, createdAt)
+            position = savedInstanceState.getInt(STATE_POSITION, position)
             persisted = savedInstanceState.getBoolean(STATE_PERSISTED)
             savedInstanceState.getString(STATE_ID)
         } else {
@@ -135,6 +143,7 @@ class NoteEditor : AppCompatActivity() {
         outState.putString(STATE_ID, noteId)
         outState.putString(STATE_COLOR, colorKey)
         outState.putLong(STATE_CREATED_AT, createdAt)
+        outState.putInt(STATE_POSITION, position)
         outState.putBoolean(STATE_PERSISTED, persisted)
     }
 
@@ -165,6 +174,7 @@ class NoteEditor : AppCompatActivity() {
                 persisted = true
                 colorKey = note.color
                 createdAt = note.createdAt
+                position = note.position
                 titleView.setText(note.title)
                 bodyView.setText(body)
                 applyColor()
@@ -240,13 +250,17 @@ class NoteEditor : AppCompatActivity() {
                     persisted = false
                 }
             } else {
+                // Une note qui vient de naître se pose en tête de grille, juste avant la
+                // première: aucune autre ligne n'a besoin d'être renumérotée pour cela.
+                if (!persisted) position = (dao.minPosition() ?: 0) - 1
                 val note = Note(
                     id = noteId,
                     title = snapshot.title,
                     bodyAst = snapshot.bodyAst,
                     color = snapshot.color,
                     createdAt = createdAt,
-                    updatedAt = System.currentTimeMillis()
+                    updatedAt = System.currentTimeMillis(),
+                    position = position
                 )
                 if (persisted) dao.update(note) else dao.insert(note).also { persisted = true }
             }
@@ -447,6 +461,7 @@ class NoteEditor : AppCompatActivity() {
         private const val STATE_ID = "state_id"
         private const val STATE_COLOR = "state_color"
         private const val STATE_CREATED_AT = "state_created_at"
+        private const val STATE_POSITION = "state_position"
         private const val STATE_PERSISTED = "state_persisted"
         private const val AUTO_SAVE_DELAY_MS = 700L
 

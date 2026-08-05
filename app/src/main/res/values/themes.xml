@@ -58,9 +58,11 @@
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
+    <!-- L'heure reste l'élément dominant de la tuile de rappel, mais sans la faire déborder:
+         à 40sp la carte occupait près d'un cinquième de l'écran pour un seul rappel. -->
     <style name="TextAppearance.Organisateur.Time" parent="TextAppearance.Material3.HeadlineLarge">
         <item name="android:fontFamily">sans-serif-light</item>
-        <item name="android:textSize">40sp</item>
+        <item name="android:textSize">32sp</item>
         <item name="android:letterSpacing">-0.03</item>
     </style>
 
