@@ -11,8 +11,11 @@ android {
         applicationId "com.majdus.organisateur"
         minSdk 28
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        // Aligné sur le tag Git. versionCode dérivé du nom de version
+        // (majeure * 10000 + mineure * 100 + correctif), afin qu'il reste croissant
+        // et lisible: 2.1.0 -> 20100.
+        versionCode 20100
+        versionName "2.1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
