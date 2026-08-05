@@ -20,6 +20,20 @@
         android:textSize="14sp"
         tools:text="14" />
 
+    <!-- Correspondance grégorienne, sous le quantième. Hors du disque de sélection, qui ne
+         porte que le jour hijri. Masquée en grégorien: la case garde alors sa taille actuelle. -->
+    <TextView
+        android:id="@+id/gregorianDay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="-4dp"
+        android:includeFontPadding="false"
+        android:textColor="@color/text_tertiary"
+        android:textSize="8sp"
+        android:visibility="gone"
+        tools:text="5/08"
+        tools:visibility="visible" />
+
     <View
         android:id="@+id/dot"
         android:layout_width="5dp"

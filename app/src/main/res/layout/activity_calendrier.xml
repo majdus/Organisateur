@@ -28,6 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:background="@android:color/transparent"
+                app:menu="@menu/calendrier"
                 app:navigationContentDescription="@string/action_back"
                 app:navigationIcon="@drawable/ic_arrow_back"
                 app:navigationIconTint="@color/text_primary" />
@@ -79,13 +80,31 @@
             android:paddingEnd="12dp"
             android:paddingBottom="2dp">
 
-            <TextView
-                android:id="@+id/selectedDateLabel"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle"
-                tools:text="Aujourd'hui, mardi 4 août" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/selectedDateLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle"
+                    tools:text="Aujourd'hui, mardi 4 août" />
+
+                <!-- Correspondance grégorienne, en hijri seulement: la porter sur la même ligne
+                     que le titre le ferait déborder à côté du bouton « Aujourd'hui ». -->
+                <TextView
+                    android:id="@+id/selectedDateSubtitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:text="5 août"
+                    tools:visibility="visible" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/todayAction"
@@ -114,7 +133,11 @@
         tools:listitem="@layout/item_event" />
 
     <!-- État vide discret, aligné sous l'en-tête de journée: le mois occupe déjà l'écran,
-         et une illustration centrée passerait sous le bouton d'action. -->
+         et une illustration centrée passerait sous le bouton d'action.
+
+         La marge de fin tient le texte à l'écart du bouton d'ajout, qui est étendu donc large.
+         Elle compte double en mode hijri: la grille y est plus haute, l'état vide descend donc
+         dans la bande du bouton au lieu de rester au-dessus de lui. -->
     <LinearLayout
         android:id="@+id/emptyState"
         android:layout_width="match_parent"
@@ -123,7 +146,7 @@
         android:orientation="horizontal"
         android:paddingStart="24dp"
         android:paddingTop="14dp"
-        android:paddingEnd="120dp"
+        android:paddingEnd="140dp"
         android:visibility="gone"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:visibility="visible">

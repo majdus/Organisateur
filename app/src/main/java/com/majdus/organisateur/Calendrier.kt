@@ -1,7 +1,10 @@
 package com.majdus.organisateur
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -9,6 +12,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.snackbar.Snackbar
@@ -33,6 +37,7 @@ class Calendrier : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var summaryView: TextView
     private lateinit var sectionLabel: TextView
+    private lateinit var sectionSubtitle: TextView
     private lateinit var todayAction: MaterialButton
     private lateinit var emptyState: View
     private lateinit var addButton: ExtendedFloatingActionButton
@@ -45,13 +50,23 @@ class Calendrier : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calendrier)
 
-        findViewById<MaterialToolbar>(R.id.toolbar)
-            .setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_calendar_system -> {
+                    showCalendarSystemSheet()
+                    true
+                }
+                else -> false
+            }
+        }
 
         calendarView = findViewById(R.id.calendar)
         recyclerView = findViewById(R.id.eventsRecyclerView)
         summaryView = findViewById(R.id.textSummary)
         sectionLabel = findViewById(R.id.selectedDateLabel)
+        sectionSubtitle = findViewById(R.id.selectedDateSubtitle)
         todayAction = findViewById(R.id.todayAction)
         emptyState = findViewById(R.id.emptyState)
         addButton = findViewById(R.id.addEvent)
@@ -80,7 +95,9 @@ class Calendrier : AppCompatActivity() {
             onEditorResult(result)
         }
 
-        renderSection()
+        // Le choix enregistré est restitué une fois les callbacks branchés: poser le système
+        // redessine la grille, et l'en-tête du jour doit suivre dans la foulée.
+        applyCalendarSystem(CalendarSystems.current(this))
     }
 
     override fun onResume() {
@@ -124,9 +141,51 @@ class Calendrier : AppCompatActivity() {
         }
     }
 
+    /**
+     * Choix du système calendaire. Feuille légère, sur le modèle du sélecteur de couleur de
+     * l'éditeur de notes: deux lignes, une coche sur l'option active.
+     */
+    private fun showCalendarSystemSheet() {
+        val view = LayoutInflater.from(this).inflate(R.layout.sheet_calendar_system, null)
+        val row = view.findViewById<LinearLayout>(R.id.systemRow)
+        val sheet = BottomSheetDialog(this)
+        val active = CalendarSystems.current(this)
+
+        for (system in CalendarSystem.values()) {
+            val item = LayoutInflater.from(this).inflate(R.layout.item_calendar_system, row, false)
+            item.findViewById<TextView>(R.id.label).setText(system.labelRes)
+            item.findViewById<ImageView>(R.id.check).visibility =
+                if (system == active) View.VISIBLE else View.GONE
+            item.contentDescription = getString(system.labelRes)
+            item.setOnClickListener {
+                CalendarSystems.save(this, system)
+                applyCalendarSystem(system)
+                // Les bornes du mois affiché ont changé, donc le décompte du résumé aussi.
+                loadMonth()
+                sheet.dismiss()
+            }
+            row.addView(item)
+        }
+
+        sheet.setContentView(view)
+        sheet.show()
+    }
+
+    /**
+     * Pose le système sur la grille et remet l'en-tête du jour en accord avec elle.
+     *
+     * Le rechargement du mois est laissé à l'appelant: au démarrage, `onResume` s'en charge déjà
+     * — l'y refaire ici coûterait une requête pour rien.
+     */
+    private fun applyCalendarSystem(system: CalendarSystem) {
+        calendarView.calendarSystem = system
+        renderSection()
+    }
+
     private fun renderSection() {
         val timestamp = EventTimes.dayStart(selectedDate)
-        val weekday = DateLabels.weekday(timestamp)
+        val system = calendarView.calendarSystem
+        val weekday = CalendarSystems.dayTitle(this, system, timestamp)
         val isToday = DateLabels.isToday(timestamp)
         sectionLabel.text = if (isToday) {
             getString(R.string.calendar_section_today, weekday)
@@ -134,6 +193,10 @@ class Calendrier : AppCompatActivity() {
             getString(R.string.calendar_section_other, weekday)
                 .replaceFirstChar { it.titlecase(Locale.FRANCE) }
         }
+
+        val gregorian = CalendarSystems.daySubtitle(system, timestamp)
+        sectionSubtitle.text = gregorian.orEmpty()
+        sectionSubtitle.visibility = if (gregorian == null) View.GONE else View.VISIBLE
         // Le raccourci de retour au jour même n'a de sens qu'ailleurs que sur lui.
         todayAction.visibility = if (isToday) View.GONE else View.VISIBLE
     }

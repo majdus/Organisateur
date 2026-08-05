@@ -83,6 +83,35 @@
     <string name="calendar_day_description">%1$s%2$s</string>
     <string name="calendar_day_has_events">, des événements sont prévus</string>
 
+    <!-- Date hijri suivie de sa correspondance grégorienne. -->
+    <string name="calendar_hijri_day_header">%1$s · %2$s</string>
+    <!-- Mois grégoriens couverts par un mois hijri, quand il en chevauche deux. -->
+    <string name="calendar_gregorian_span">%1$s – %2$s</string>
+    <string name="calendar_system_action">Type de calendrier</string>
+    <string name="calendar_system_gregorian">Grégorien</string>
+    <string name="calendar_system_hijri">Hijri</string>
+    <!-- Suffixe de l'année hijri, pour la distinguer d'une année grégorienne. -->
+    <string name="hijri_year_suffix">H</string>
+
+    <!-- Translittération française des mois hijri, en minuscules comme les mois grégoriens
+         rendus par SimpleDateFormat: la majuscule initiale est posée à l'affichage. Ces noms
+         sont tenus ici plutôt que pris chez le système, dont rien ne garantit qu'il sache
+         nommer les mois islamiques en français. -->
+    <string-array name="hijri_months">
+        <item>mouharram</item>
+        <item>safar</item>
+        <item>rabia al awal</item>
+        <item>rabia ath-thani</item>
+        <item>joumada al oula</item>
+        <item>joumada ath-thania</item>
+        <item>rajab</item>
+        <item>chaabane</item>
+        <item>ramadan</item>
+        <item>chawwal</item>
+        <item>dhou al qi\'da</item>
+        <item>dhou al hijja</item>
+    </string-array>
+
     <string name="event_new_title">Nouvel événement</string>
     <string name="event_edit_title">Modifier l\'événement</string>
     <string name="event_label_hint">Intitulé de l\'événement</string>

@@ -40,6 +40,19 @@
             app:tint="@color/text_secondary" />
     </LinearLayout>
 
+    <!-- Mois grégoriens couverts par le mois affiché. Visible en hijri seulement: en
+         grégorien, le titre au-dessus dit déjà tout. -->
+    <TextView
+        android:id="@+id/monthSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="Août – septembre 2026"
+        tools:visibility="visible" />
+
     <LinearLayout
         android:id="@+id/weekdays"
         android:layout_width="match_parent"
