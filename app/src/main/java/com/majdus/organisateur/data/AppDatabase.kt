@@ -94,8 +94,10 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 // Filet pour les chemins de version imprévus uniquement: toute évolution de
-                // schéma doit venir avec sa migration, sinon les données partent.
-                .fallbackToDestructiveMigration()
+                // schéma doit venir avec sa migration, sinon les données partent. Le `false`
+                // restreint la casse aux tables gérées par Room, comme le faisait la variante
+                // sans argument désormais dépréciée.
+                .fallbackToDestructiveMigration(false)
                 .build()
                 INSTANCE = instance
                 instance

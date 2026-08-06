@@ -49,6 +49,7 @@ class Calendrier : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calendrier)
+        findViewById<View>(R.id.rootLayout).padForSystemBars()
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
