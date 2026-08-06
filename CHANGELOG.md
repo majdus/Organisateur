@@ -4,7 +4,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
-## [Non publié]
+## [2.3.0] — 2026-08-06
 
 ### Ajouté
 - **Préparation de la signature.** Le `build.gradle` sait signer la variante release à partir d'un
@@ -103,6 +103,7 @@ Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + corr
 Premières versions : tâches, rappels et calendrier, édition des éléments, interrupteur sur les
 rappels, jeu d'icônes. Voir l'historique Git pour le détail.
 
+[2.3.0]: https://github.com/majdus/Organisateur/releases/tag/v2.3.0
 [2.2.0]: https://github.com/majdus/Organisateur/releases/tag/v2.2.0
 [2.1.0]: https://github.com/majdus/Organisateur/releases/tag/v2.1.0
 [2.0.0]: https://github.com/majdus/Organisateur/releases/tag/v2.0.0
