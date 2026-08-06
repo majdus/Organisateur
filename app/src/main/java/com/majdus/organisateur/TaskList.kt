@@ -48,6 +48,7 @@ class TaskList : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_task_list)
+        findViewById<View>(R.id.rootLayout).padForSystemBars()
 
         findViewById<MaterialToolbar>(R.id.toolbar)
             .setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }

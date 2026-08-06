@@ -25,8 +25,13 @@
         <item name="colorError">@color/danger</item>
         <item name="elevationOverlayEnabled">false</item>
 
-        <item name="android:statusBarColor">@color/app_background</item>
-        <item name="android:navigationBarColor">@color/app_background</item>
+        <!-- Plus de couleur de barre à fixer: en `targetSdk 36` l'application est dessinée de
+             bord à bord et ces attributs sont ignorés. C'est le fond de fenêtre
+             (`android:colorBackground`) qu'on aperçoit derrière les barres, et `padForSystemBars`
+             qui repousse le contenu. Reste à désactiver le voile de contraste que le système
+             pose sinon sur les barres, qui trancherait sur un fond aussi clair. -->
+        <item name="android:enforceStatusBarContrast" tools:targetApi="q">false</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="q">false</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
 

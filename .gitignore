@@ -1,15 +1,40 @@
-*.iml
-.gradle
+# ===== Secrets et signature — NE JAMAIS COMMITTER =====
+# La clé de téléversement vit hors du dépôt (~/keys/), mais `keystore.properties` se place par
+# convention à la racine du projet et contient les mots de passe en clair. Ces règles viennent
+# en premier pour qu'un `git add -A` distrait ne puisse rien emporter.
+*.jks
+*.keystore
+keystore.properties
+key.properties
+**/google-services.json
+.env
+*.env
+
+# ===== Gradle et sorties de compilation =====
+.gradle/
+.kotlin/
+/build/
+**/build/
+/captures/
+*.apk
+*.aab
+.externalNativeBuild/
+.cxx/
+
+# ===== Configuration locale à la machine =====
+# Contient le chemin du SDK Android, propre à chaque poste.
 /local.properties
-/.idea/caches
-/.idea/libraries
+
+# ===== Environnement de développement =====
+*.iml
+/.idea/caches/
+/.idea/libraries/
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/deploymentTargetDropDown.xml
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+
+# ===== Outils =====
+.claude/settings.local.json

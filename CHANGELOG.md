@@ -4,6 +4,36 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
+## [Non publié]
+
+### Ajouté
+- **Préparation de la signature.** Le `build.gradle` sait signer la variante release à partir d'un
+  `keystore.properties` non versionné. En son absence la compilation aboutit quand même, sur un
+  APK non signé : on peut donc construire le projet sans détenir la clé. Le modèle à recopier est
+  `keystore.properties.example`.
+
+### Modifié
+- **Affichage de bord à bord.** L'application dessine désormais sous les barres système, comme
+  l'impose Android 16. Le rendu est inchangé à l'œil : les barres laissent voir le fond de l'écran,
+  et le contenu est repoussé de leur hauteur. L'éditeur de notes garde sa teinte jusqu'aux bords.
+
+### Notes techniques
+- `targetSdk` et `compileSdk` passent de 34 à **36**, exigence du Play Store pour toute
+  soumission à partir du 31 août 2026.
+- Chaîne de compilation remise à niveau, imposée par le `compileSdk 36` : AGP 7.4.2 → 8.9.1,
+  Gradle 7.5 → 8.11.1, Kotlin 1.8.22 → 2.1.0, Java 8 → 17. Le nom de paquet quitte le manifeste
+  pour le `namespace` du `build.gradle`, et `jcenter()` disparaît des dépôts.
+- **Room passe de kapt à KSP** et de 2.6.1 à 2.7.1 : kapt ne sait pas lire les métadonnées
+  Kotlin 2.1 et faisait échouer la compilation. Aucun changement de schéma, donc aucune migration.
+- `statusBarColor` et `navigationBarColor` n'étant plus honorés, les encarts sont appliqués en
+  marge intérieure par `padForSystemBars` sur le `rootLayout` des six écrans. L'éditeur de notes
+  teinte le fond de fenêtre, seul moyen restant de colorer la zone des barres, et prend aussi en
+  compte l'encart du clavier pour garder sa barre de mise en forme visible.
+- Le voile de contraste que le système pose sur les barres est désactivé
+  (`enforceStatusBarContrast`, `enforceNavigationBarContrast`) : il trancherait sur un fond clair.
+- Material 1.12 est requis pour que les `BottomSheetDialog`, où se fait toute l'édition, gèrent
+  les encarts.
+
 ## [2.2.0] — 2026-08-05
 
 ### Ajouté

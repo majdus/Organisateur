@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -90,6 +91,8 @@ class NoteEditor : AppCompatActivity() {
         setContentView(R.layout.activity_note_editor)
 
         rootView = findViewById(R.id.rootLayout)
+        // Seul écran à saisie en ligne: la barre de mise en forme doit rester au-dessus du clavier.
+        rootView.padForSystemBars(includeIme = true)
         titleView = findViewById(R.id.noteTitle)
         bodyView = findViewById(R.id.note)
 
@@ -298,8 +301,11 @@ class NoteEditor : AppCompatActivity() {
     private fun applyColor() {
         val color = NoteColors.color(this, colorKey)
         rootView.setBackgroundColor(color)
-        // Toutes les teintes de la palette sont claires: le texte de la barre d'état reste noir.
-        window.statusBarColor = color
+        // De bord à bord, `statusBarColor` n'est plus honoré: c'est le fond de fenêtre qu'on voit
+        // derrière les barres, une fois le contenu repoussé par les encarts. On le teinte donc lui
+        // aussi, sans quoi l'écran garderait un bandeau gris clair en haut et en bas.
+        // Toutes les teintes de la palette sont claires: les icônes des barres restent noires.
+        window.setBackgroundDrawable(ColorDrawable(color))
     }
 
     // ===== Mise en forme du texte =====
