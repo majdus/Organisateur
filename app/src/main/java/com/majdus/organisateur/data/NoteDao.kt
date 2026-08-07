@@ -20,14 +20,15 @@ interface NoteDao {
      */
     @Query(
         "SELECT id, title, substr(bodyAst, 1, 4000) AS bodyAst, color, createdAt, updatedAt, " +
-                "position FROM notes ORDER BY position ASC, id ASC"
+                "position, type, substr(items, 1, 4000) AS items " +
+                "FROM notes ORDER BY position ASC, id ASC"
     )
     suspend fun getAllNotesForList(): List<Note>
 
     /** Métadonnées seules: sûr quelle que soit la taille du corps. */
     @Query(
-        "SELECT id, title, '' AS bodyAst, color, createdAt, updatedAt, position " +
-                "FROM notes WHERE id = :id"
+        "SELECT id, title, '' AS bodyAst, color, createdAt, updatedAt, position, " +
+                "type, '' AS items FROM notes WHERE id = :id"
     )
     suspend fun getMetadata(id: String): Note?
 
@@ -37,6 +38,13 @@ interface NoteDao {
     /** Tranche de corps, lue à part pour ne jamais dépasser la fenêtre du curseur. */
     @Query("SELECT substr(bodyAst, :start, :count) FROM notes WHERE id = :id")
     suspend fun bodySlice(id: String, start: Int, count: Int): String?
+
+    @Query("SELECT length(items) FROM notes WHERE id = :id")
+    suspend fun itemsLength(id: String): Int?
+
+    /** Même précaution pour la liste: rien n'interdit une liste de courses interminable. */
+    @Query("SELECT substr(items, :start, :count) FROM notes WHERE id = :id")
+    suspend fun itemsSlice(id: String, start: Int, count: Int): String?
 
     @Query("SELECT COUNT(*) FROM notes")
     suspend fun countNotes(): Int

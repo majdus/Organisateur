@@ -7,6 +7,7 @@
     <string name="action_save">Enregistrer</string>
     <string name="action_delete">Supprimer</string>
     <string name="action_undo">Annuler</string>
+    <string name="action_close">Fermer</string>
     <string name="date_today">aujourd\'hui</string>
     <string name="date_yesterday">hier</string>
     <string name="date_tomorrow">demain</string>
@@ -131,6 +132,7 @@
     <!-- ===== Notes ===== -->
     <string name="notes_title">Notes</string>
     <string name="notes_add">Nouvelle note</string>
+    <string name="notes_add_menu">Créer</string>
     <string name="notes_summary_none">Aucune note</string>
     <string name="notes_summary_one">1 note</string>
     <string name="notes_summary_other">%1$d notes</string>
@@ -151,6 +153,28 @@
     <string name="note_color_blue">Bleu</string>
     <string name="note_color_pink">Rose</string>
     <string name="note_color_purple">Violet</string>
+
+    <!-- Notes de type liste -->
+    <string name="notes_add_checklist">Nouvelle liste</string>
+    <string name="notes_empty_action_checklist">Créer une liste</string>
+    <string name="note_checklist_add_item">Élément de liste</string>
+    <string name="note_checklist_item_hint">Élément</string>
+    <string name="note_checklist_check_item">Cocher l\'élément</string>
+    <string name="note_checklist_remove_item">Supprimer l\'élément</string>
+    <string name="note_checklist_reorder_item">Déplacer l\'élément</string>
+    <string name="note_checklist_checked_one">1 élément coché</string>
+    <string name="note_checklist_checked_other">%1$d éléments cochés</string>
+    <string name="note_checklist_expand">Afficher les éléments cochés</string>
+    <string name="note_checklist_collapse">Masquer les éléments cochés</string>
+    <string name="note_checklist_more_one">+ 1 autre élément</string>
+    <string name="note_checklist_more_other">+ %1$d autres éléments</string>
+    <string name="note_checklist_item_description">Liste %1$s</string>
+    <string name="note_show_checkboxes">Afficher les cases</string>
+    <string name="note_hide_checkboxes">Masquer les cases</string>
+    <string name="note_uncheck_all">Tout décocher</string>
+    <string name="note_delete_checked">Supprimer les éléments cochés</string>
+    <string name="note_checked_deleted_one">1 élément supprimé</string>
+    <string name="note_checked_deleted_other">%1$d éléments supprimés</string>
 
     <string name="notes_format_bold">Gras</string>
     <string name="notes_format_italic">Italique</string>

@@ -5,10 +5,15 @@ import androidx.room.PrimaryKey
 import java.util.UUID
 
 /**
- * Une note.
+ * Une note, de texte ou de liste à cocher.
+ *
+ * [type] décide de celui des deux corps qui fait foi: [bodyAst] pour une note de texte, [items]
+ * pour une liste. L'autre est vidé à la conversion plutôt que gardé en réserve — deux corps
+ * vivants en parallèle finiraient par diverger, et c'est aussi ce que fait Keep.
  *
  * [bodyAst] est le corps sérialisé au format AST de `RichTextParser` — le même format que celui
  * déjà utilisé par l'ancienne note unique, ce qui permet de la reprendre telle quelle.
+ * [items] est la liste sérialisée par `Checklist`.
  * [color] est une clé de palette ("default", "yellow", …), pas une valeur ARGB: la teinte exacte
  * reste du ressort du thème et peut être ajustée sans toucher aux données.
  * [position] donne l'ordre voulu par l'utilisateur dans la grille.
@@ -26,5 +31,19 @@ data class Note(
      * trous et les valeurs négatives sont normaux — une note créée prend le rang du minimum moins
      * un pour se poser en tête, sans avoir à réécrire toutes les autres lignes.
      */
-    var position: Int = 0
-)
+    var position: Int = 0,
+    /**
+     * [TYPE_TEXT] ou [TYPE_CHECKLIST]. Une valeur inconnue — note écrite par une version
+     * ultérieure — est traitée comme du texte: la note reste lisible au lieu de disparaître.
+     */
+    var type: String = TYPE_TEXT,
+    var items: String = "[]"
+) {
+    companion object {
+        const val TYPE_TEXT = "text"
+        const val TYPE_CHECKLIST = "list"
+    }
+}
+
+/** Hors de l'entité: Room n'a pas à se demander comment enregistrer une propriété calculée. */
+val Note.isChecklist: Boolean get() = type == Note.TYPE_CHECKLIST

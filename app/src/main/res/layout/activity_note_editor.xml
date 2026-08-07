@@ -62,11 +62,27 @@
         android:textSize="16sp"
         tools:ignore="Autofill" />
 
+    <!-- La liste à cocher prend la place du corps de texte: une note est de l'un ou l'autre
+         type, jamais des deux à la fois. -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/checklist"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingHorizontal="6dp"
+        android:paddingBottom="16dp"
+        android:visibility="gone"
+        tools:listitem="@layout/item_checklist_row" />
+
     <View
+        android:id="@+id/formatDivider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/border_subtle" />
 
+    <!-- Barre de mise en forme réservée aux notes de texte: une liste à cocher n'a ni gras ni
+         couleur de caractère, comme dans Keep. -->
     <LinearLayout
         android:id="@+id/format_toolbar"
         android:layout_width="match_parent"
