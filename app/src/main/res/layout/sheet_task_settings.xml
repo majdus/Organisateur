@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/surface_card"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingBottom="28dp">
+
+    <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="20dp"
+        android:text="@string/task_settings_title"
+        android:textAppearance="@style/TextAppearance.Organisateur.SheetTitle" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="8dp"
+        android:text="@string/task_settings_placement"
+        android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/placementGroup"
+        style="@style/Widget.Organisateur.Segments"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/placementTop"
+            style="@style/Widget.Organisateur.Segments.Button"
+            android:text="@string/task_settings_placement_top" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/placementBottom"
+            style="@style/Widget.Organisateur.Segments.Button"
+            android:text="@string/task_settings_placement_bottom" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="24dp"
+        android:paddingBottom="8dp"
+        android:text="@string/task_settings_check"
+        android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/checkGroup"
+        style="@style/Widget.Organisateur.Segments"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/checkStrike"
+            style="@style/Widget.Organisateur.Segments.Button"
+            android:text="@string/task_settings_check_strike" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/checkDelete"
+            style="@style/Widget.Organisateur.Segments.Button"
+            android:text="@string/task_settings_check_delete" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+</LinearLayout>

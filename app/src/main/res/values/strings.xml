@@ -68,6 +68,16 @@
     <string name="task_created">Tâche ajoutée</string>
     <string name="task_updated">Tâche mise à jour</string>
     <string name="task_deleted">Tâche supprimée</string>
+    <string name="task_checked_deleted">Tâche terminée et supprimée</string>
+
+    <string name="task_settings_action">Réglages des tâches</string>
+    <string name="task_settings_title">Réglages</string>
+    <string name="task_settings_placement">Nouvelle tâche</string>
+    <string name="task_settings_placement_top">En haut</string>
+    <string name="task_settings_placement_bottom">En bas</string>
+    <string name="task_settings_check">Tâche cochée</string>
+    <string name="task_settings_check_strike">Barrée</string>
+    <string name="task_settings_check_delete">Supprimée</string>
 
     <!-- ===== Calendrier ===== -->
     <string name="calendar_title">Calendrier</string>

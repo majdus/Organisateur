@@ -4,6 +4,34 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
+## [2.5.0] — 2026-08-07
+
+### Ajouté
+- **Réglages de l'écran des tâches.** Une roue dentée dans la barre d'outils ouvre une feuille où
+  se règlent deux choses : où se pose une nouvelle tâche — en haut ou en bas de la liste — et ce
+  qu'il advient d'une tâche cochée — barrée ou supprimée. Deux contrôles segmentés, sans phrase
+  explicative : le titre de section porte le contexte.
+- Cocher une tâche sous le réglage « supprimée » la retire de la liste avec le Snackbar
+  « Annuler » déjà utilisé par le balayage.
+
+### Modifié
+- **Une nouvelle tâche se pose désormais en haut de la liste** par défaut, là où elle se posait
+  en bas. Le réglage permet de revenir à l'ancien comportement.
+- Le commutateur « Tâche terminée » de la feuille d'édition suit le réglage de cochage, comme la
+  case de la carte. Renommer une tâche déjà terminée ne la supprime pas pour autant.
+
+### Notes techniques
+- Aucun changement de schéma : les deux réglages vivent dans les préférences `organisateur`
+  (`task_new_placement`, `task_check_action`), sous une clé stable indépendante du libellé.
+- Se poser en tête, c'est prendre un rang plus petit que tous les autres, fût-il négatif
+  (`TaskDao.minPosition()`). Les rangs ne valant que les uns par rapport aux autres, rien n'est
+  réindexé, et la prochaine réorganisation au doigt remet la numérotation à plat.
+- L'annulation d'une tâche cochée-supprimée la réinsère **décochée** : revenir sur un cochage,
+  c'est retrouver une tâche à faire.
+- Les contrôles segmentés sont des `MaterialButtonToggleGroup` en `singleSelection` et
+  `selectionRequired` — un réglage a toujours une valeur. L'écoute est branchée après la pose de
+  la valeur lue, sans quoi la sélection initiale réécrirait la préférence qu'elle vient de lire.
+
 ## [2.4.0] — 2026-08-07
 
 ### Ajouté

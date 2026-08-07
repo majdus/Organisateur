@@ -126,7 +126,10 @@ class TaskEditSheet : BottomSheetDialogFragment() {
 
         fun editedTask(result: Bundle): Task? = readTask(result, PREFIX_TASK)
 
-        fun isNew(result: Bundle): Boolean = readTask(result, PREFIX_ORIGINAL) == null
+        fun isNew(result: Bundle): Boolean = originalTask(result) == null
+
+        /** La tâche telle qu'elle était avant l'ouverture de la feuille, ou `null` si elle est neuve. */
+        fun originalTask(result: Bundle): Task? = readTask(result, PREFIX_ORIGINAL)
 
         // Le rang fait l'aller-retour comme les autres champs: la feuille renvoie une tâche
         // reconstruite de toutes pièces, et l'oublier ici la ferait remonter en tête de liste

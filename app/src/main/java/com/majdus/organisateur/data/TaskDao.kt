@@ -24,6 +24,14 @@ interface TaskDao {
     @Query("SELECT MAX(position) FROM tasks")
     suspend fun maxPosition(): Int?
 
+    /**
+     * Premier rang de la liste: une tâche créée se pose juste avant quand le réglage veut la voir
+     * en tête. Le rang obtenu est négatif dès la deuxième création, ce que l'ordre relatif admet
+     * sans rien réindexer.
+     */
+    @Query("SELECT MIN(position) FROM tasks")
+    suspend fun minPosition(): Int?
+
     @Query("UPDATE tasks SET position = :position WHERE id = :id")
     suspend fun updatePosition(id: String, position: Int)
 

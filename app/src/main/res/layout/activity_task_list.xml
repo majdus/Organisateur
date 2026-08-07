@@ -25,6 +25,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:background="@android:color/transparent"
+                app:menu="@menu/task_list"
                 app:navigationContentDescription="@string/action_back"
                 app:navigationIcon="@drawable/ic_arrow_back"
                 app:navigationIconTint="@color/text_primary" />
