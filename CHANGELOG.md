@@ -4,6 +4,39 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
+## [2.4.0] — 2026-08-07
+
+### Ajouté
+- **Notes de type liste.** Une note est désormais du texte ou une liste à cocher, sur le modèle
+  de Google Keep. Entrée coupe la ligne au curseur et en ouvre une nouvelle en dessous ; retour
+  arrière en début de ligne la recolle à la précédente ; une poignée permet de réordonner au
+  doigt. Cocher un élément le barre et l'envoie sous un en-tête « n éléments cochés », repliable
+  pour ne garder à l'écran que ce qui reste à faire.
+- **Un seul bouton de création, qui se déploie.** Le bouton d'action de l'écran Notes ouvre deux
+  choix — nouvelle note, nouvelle liste — sous un voile qui éteint la grille. Il se referme par
+  la croix, le voile, le retour, un défilement ou le déplacement d'une tuile.
+- **Conversion dans les deux sens.** Le menu de l'éditeur offre « Afficher les cases » et
+  « Masquer les cases » : chaque ligne non vide devient un élément, et inversement. Deux autres
+  entrées n'apparaissent que s'il y a des éléments cochés : « Tout décocher » et « Supprimer les
+  éléments cochés ».
+- Les cartes de la grille montrent les premiers éléments d'une liste avec leur case, cochés
+  barrés, suivis d'un « + n autres éléments ».
+
+### Notes techniques
+- Base de données en **version 7** : `MIGRATION_6_7` ajoute les colonnes `type` et `items` à la
+  table des notes, sans toucher aux notes existantes qui restent du texte.
+- Les deux corps ne coexistent jamais : convertir transporte le contenu et vide l'autre, comme
+  dans Keep. La mise en forme des caractères est donc perdue au passage en liste, une liste n'en
+  portant pas.
+- L'ordre du JSON de `items` porte la séparation des sections — non cochés d'abord, cochés
+  ensuite. Cocher ou décocher réinsère la ligne à la frontière entre les deux.
+- La colonne `items` suit le même régime que le corps de texte face à la fenêtre de 2 Mo du
+  curseur SQLite : préfixe seul pour l'aperçu de la grille, lecture par tranches dans l'éditeur.
+- La validation d'un champ de saisie est délivrée deux fois par le système — à l'appui puis au
+  relâchement — et coupait donc la ligne deux fois ; seul l'appui agit désormais. Le retour
+  arrière, lui, arrive par trois chemins différents selon le clavier : les trois sont pris en
+  compte, y compris celui d'un clavier physique.
+
 ## [2.3.0] — 2026-08-06
 
 ### Ajouté
