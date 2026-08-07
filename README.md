@@ -50,4 +50,23 @@ La variante release se signe à partir d'un `keystore.properties` non versionné
 `keystore.properties.example`. En son absence la compilation aboutit quand même, sur un APK non
 signé.
 
+## Publier une version
+
+Le travail se fait sur une branche `feat/…`, puis :
+
+1. `chore: passe en X.Y.Z et fige la section du journal` — `versionName` dans le `build.gradle`,
+   `versionCode` dérivé du nom (`majeure * 10000 + mineure * 100 + correctif`), et la section
+   correspondante ajoutée en tête de [CHANGELOG.md](CHANGELOG.md).
+2. Merge `--no-ff` dans `main`, puis tag annoté `vX.Y.Z`.
+3. Pousser `main` **et** le tag.
+4. **Créer la release GitHub du tag** — chaque tag en a une, sans exception. Les notes
+   reprennent la section du journal en prose, et l'APK debug y est joint sous le nom
+   `organisateur-X.Y.Z-debug.apk` :
+
+   ```sh
+   gh release create vX.Y.Z --verify-tag --latest \
+     --title "vX.Y.Z : <titre court>" \
+     --notes-file <notes.md> organisateur-X.Y.Z-debug.apk
+   ```
+
 Le journal des versions est dans [CHANGELOG.md](CHANGELOG.md).
