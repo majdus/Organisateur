@@ -15,6 +15,7 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 import com.google.android.material.snackbar.Snackbar
 import com.majdus.organisateur.data.AppDatabase
 import com.majdus.organisateur.data.Task
+import com.majdus.organisateur.data.TaskDao
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,6 +33,10 @@ import kotlinx.coroutines.withContext
  * L'ordre de la liste appartient à l'utilisateur: un appui long soulève une tâche et la repose
  * où il veut, pour ranger par importance. Les tâches terminées restent groupées en bas, et le
  * déplacement ne franchit pas cette frontière.
+ *
+ * Deux façons de tenir une liste de tâches se valent, alors l'écran ne tranche pas et laisse le
+ * choix dans [TaskSettingsSheet]: où se pose une nouvelle tâche, et ce qu'il advient d'une tâche
+ * cochée. Les réglages sont relus à chaque geste — rien n'est mis en cache ici.
  */
 class TaskList : AppCompatActivity() {
 
@@ -50,8 +55,17 @@ class TaskList : AppCompatActivity() {
         setContentView(R.layout.activity_task_list)
         findViewById<View>(R.id.rootLayout).padForSystemBars()
 
-        findViewById<MaterialToolbar>(R.id.toolbar)
-            .setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_task_settings -> {
+                    TaskSettingsSheet().show(supportFragmentManager, TaskSettingsSheet.TAG)
+                    true
+                }
+                else -> false
+            }
+        }
 
         summaryView = findViewById(R.id.textSummary)
         emptyState = findViewById(R.id.emptyState)
@@ -158,16 +172,22 @@ class TaskList : AppCompatActivity() {
         when (TaskEditSheet.action(result)) {
             TaskEditSheet.ACTION_DELETE -> deleteTask(task)
             TaskEditSheet.ACTION_SAVE -> {
-                val isNew = TaskEditSheet.isNew(result)
+                val original = TaskEditSheet.originalTask(result)
+                // Le commutateur « Tâche terminée » de la feuille coche la tâche comme le ferait
+                // sa case: sous le réglage « la supprime », il la fait donc disparaître elle
+                // aussi. Une tâche déjà terminée que l'on vient seulement de renommer, non.
+                if (original?.isCompleted == false && task.isCompleted && checkRemovesTask()) {
+                    deleteCheckedTask(task)
+                    return
+                }
+                val isNew = original == null
+                val placement = TaskSettings.placement(this)
                 write(
                     message = getString(if (isNew) R.string.task_created else R.string.task_updated)
                 ) {
                     val dao = db.taskDao()
                     if (isNew) {
-                        // Une tâche qui vient d'être écrite se pose en fin de liste, comme le
-                        // faisait le tri par date de création: on ajoute au bas de ce qu'on a
-                        // déjà à faire, on ne s'impose pas en tête.
-                        dao.insert(task.copy(position = (dao.maxPosition() ?: -1) + 1))
+                        dao.insert(task.copy(position = newTaskPosition(dao, placement)))
                     } else {
                         dao.update(task)
                     }
@@ -176,11 +196,37 @@ class TaskList : AppCompatActivity() {
         }
     }
 
-    /** Cocher est silencieux: le texte barré et le déplacement de la carte suffisent à le dire. */
+    /**
+     * Rang d'une tâche qui vient d'être écrite, selon le réglage de placement.
+     *
+     * Les rangs ne valent que les uns par rapport aux autres: se poser en tête, c'est prendre un
+     * rang plus petit que tous les autres, fût-il négatif. La prochaine réorganisation au doigt
+     * remettra la numérotation à plat.
+     */
+    private suspend fun newTaskPosition(dao: TaskDao, placement: NewTaskPlacement): Int =
+        when (placement) {
+            NewTaskPlacement.TOP -> (dao.minPosition() ?: 0) - 1
+            NewTaskPlacement.BOTTOM -> (dao.maxPosition() ?: -1) + 1
+        }
+
+    /**
+     * Cocher est silencieux: le texte barré et le déplacement de la carte suffisent à le dire.
+     *
+     * Sauf si le réglage veut que cocher supprime — là, la tâche s'en va, et un Snackbar le dit
+     * puisqu'il n'en reste aucune trace à l'écran. Décocher ne relève d'aucun réglage: c'est un
+     * retour en arrière, il remet simplement la tâche à faire.
+     */
     private fun onToggleTask(task: Task, completed: Boolean) {
+        if (completed && checkRemovesTask()) {
+            deleteCheckedTask(task)
+            return
+        }
         val updated = task.copy(isCompleted = completed)
         write(message = null) { db.taskDao().update(updated) }
     }
+
+    private fun checkRemovesTask(): Boolean =
+        TaskSettings.checkAction(this) == TaskCheckAction.DELETE
 
     private fun onSwipeDelete(position: Int) {
         val task = taskAdapter.itemAt(position) ?: return
@@ -188,12 +234,32 @@ class TaskList : AppCompatActivity() {
     }
 
     private fun deleteTask(task: Task) {
+        removeTask(task, restored = task, message = getString(R.string.task_deleted))
+    }
+
+    /**
+     * Tâche cochée sous le réglage « la supprime ». L'annulation la remet **décochée**: revenir
+     * sur un cochage, c'est retrouver une tâche à faire, pas une tâche terminée.
+     */
+    private fun deleteCheckedTask(task: Task) {
+        removeTask(
+            task,
+            restored = task.copy(isCompleted = false),
+            message = getString(R.string.task_checked_deleted)
+        )
+    }
+
+    /**
+     * Retire [task] de la base et propose [restored] en annulation.
+     *
+     * La réinsertion garde le rang: la tâche retrouve exactement sa place dans la liste, et non
+     * le bas de la pile.
+     */
+    private fun removeTask(task: Task, restored: Task, message: String) {
         write(message = null) { db.taskDao().delete(task) }
-        // L'annulation réinsère la tâche telle quelle, son rang compris: elle retrouve donc
-        // exactement sa place dans la liste, et non le bas de la pile.
-        snackbar(getString(R.string.task_deleted))
+        snackbar(message)
             .setAction(R.string.action_undo) {
-                write(message = null) { db.taskDao().insert(task) }
+                write(message = null) { db.taskDao().insert(restored) }
             }
             .show()
     }

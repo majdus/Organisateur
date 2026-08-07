@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Segment actif plein émeraude, segment inactif transparent sur le fond de la feuille. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/accent_tasks" android:state_checked="true" />
+    <item android:color="@android:color/transparent" />
+</selector>

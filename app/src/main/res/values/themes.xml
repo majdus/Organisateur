@@ -172,6 +172,30 @@
         <item name="android:textSize">15sp</item>
     </style>
 
+    <!-- Choix entre deux possibilités, posé d'un bloc: le réglage se lit et se change d'un coup
+         d'œil, sans une ligne de texte pour dire ce que chaque option fait. -->
+    <style name="Widget.Organisateur.Segments" parent="Widget.Material3.MaterialButtonToggleGroup">
+        <item name="singleSelection">true</item>
+        <!-- Un réglage a toujours une valeur: on ne peut pas déselectionner l'option active. -->
+        <item name="selectionRequired">true</item>
+    </style>
+
+    <style name="Widget.Organisateur.Segments.Button" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="backgroundTint">@color/segment_tasks_background</item>
+        <item name="android:textColor">@color/segment_tasks_text</item>
+        <item name="strokeColor">@color/border_subtle</item>
+        <item name="rippleColor">@color/accent_tasks_soft</item>
+        <item name="cornerRadius">14dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
     <!-- Le Snackbar par défaut est un rectangle sombre à angles droits: seul élément de
          l'interface à ne pas suivre le rayon des cartes. -->
     <style name="Widget.Organisateur.Snackbar" parent="Widget.Material3.Snackbar">
