@@ -13,6 +13,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -20,11 +21,17 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.snackbar.Snackbar
 import com.majdus.organisateur.data.AppDatabase
 import com.majdus.organisateur.data.Note
+import com.majdus.organisateur.data.isChecklist
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,7 +41,11 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /**
- * Rédaction d'une note: un titre, un corps en texte enrichi, une couleur.
+ * Rédaction d'une note: un titre, un corps, une couleur.
+ *
+ * Le corps est de l'un des deux types de Keep, et l'on passe de l'un à l'autre depuis le menu:
+ * du texte enrichi, ou une liste à cocher. Les deux ne coexistent jamais — convertir transporte
+ * le contenu et vide l'autre corps.
  *
  * Il n'y a pas de bouton « Enregistrer »: la note est écrite peu après la dernière frappe et en
  * quittant l'écran. Une note dont le titre et le corps sont vides n'est jamais conservée — ni
@@ -47,8 +58,18 @@ class NoteEditor : AppCompatActivity() {
     private lateinit var rootView: View
     private lateinit var titleView: EditText
     private lateinit var bodyView: EditText
+    private lateinit var toolbar: MaterialToolbar
+    private lateinit var checklistView: RecyclerView
+    private lateinit var formatDivider: View
+    private lateinit var formatToolbar: View
+    private lateinit var checklistAdapter: ChecklistAdapter
+    private lateinit var checklistTouchHelper: ItemTouchHelper
+
+    /** Les lignes de la liste à cocher, tenues ici et pilotées par [checklistAdapter]. */
+    private val checklistItems = mutableListOf<ChecklistItem>()
 
     private lateinit var noteId: String
+    private var noteType: String = Note.TYPE_TEXT
     private var colorKey: String = NoteColors.DEFAULT
     private var createdAt: Long = System.currentTimeMillis()
 
@@ -95,8 +116,11 @@ class NoteEditor : AppCompatActivity() {
         rootView.padForSystemBars(includeIme = true)
         titleView = findViewById(R.id.noteTitle)
         bodyView = findViewById(R.id.note)
+        checklistView = findViewById(R.id.checklist)
+        formatDivider = findViewById(R.id.formatDivider)
+        formatToolbar = findViewById(R.id.format_toolbar)
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar = findViewById(R.id.toolbar)
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
         toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -108,19 +132,35 @@ class NoteEditor : AppCompatActivity() {
                     deleteAndFinish()
                     true
                 }
+                R.id.action_toggle_checkboxes -> {
+                    if (noteType == Note.TYPE_CHECKLIST) convertToText() else convertToChecklist()
+                    true
+                }
+                R.id.action_uncheck_all -> {
+                    checklistAdapter.uncheckAll()
+                    refreshMenu()
+                    true
+                }
+                R.id.action_delete_checked -> {
+                    deleteCheckedItems()
+                    true
+                }
                 else -> false
             }
         }
 
         setupFormatToolbar()
+        setupChecklist()
 
         val requestedId = if (savedInstanceState != null) {
             colorKey = savedInstanceState.getString(STATE_COLOR) ?: NoteColors.DEFAULT
             createdAt = savedInstanceState.getLong(STATE_CREATED_AT, createdAt)
             position = savedInstanceState.getInt(STATE_POSITION, position)
             persisted = savedInstanceState.getBoolean(STATE_PERSISTED)
+            noteType = savedInstanceState.getString(STATE_TYPE) ?: Note.TYPE_TEXT
             savedInstanceState.getString(STATE_ID)
         } else {
+            noteType = intent.getStringExtra(EXTRA_NOTE_TYPE) ?: Note.TYPE_TEXT
             intent.getStringExtra(EXTRA_NOTE_ID)
         }
         noteId = requestedId ?: UUID.randomUUID().toString()
@@ -129,9 +169,16 @@ class NoteEditor : AppCompatActivity() {
             // Le contenu est toujours relu en base, jamais restauré depuis l'état d'instance:
             // un texte long n'y tient pas (limite des transactions Binder) et se retrouverait
             // silencieusement vide.
+            applyType()
             loadNote(noteId)
         } else {
             contentLoaded = true
+            applyType()
+            // Une liste qu'on vient d'ouvrir s'ouvre sur sa première ligne, curseur dedans:
+            // c'est la seule chose qu'on puisse vouloir y faire.
+            if (noteType == Note.TYPE_CHECKLIST && checklistItems.isEmpty()) {
+                checklistAdapter.appendItem()
+            }
             startWatching()
         }
         applyColor()
@@ -148,6 +195,7 @@ class NoteEditor : AppCompatActivity() {
         outState.putLong(STATE_CREATED_AT, createdAt)
         outState.putInt(STATE_POSITION, position)
         outState.putBoolean(STATE_PERSISTED, persisted)
+        outState.putString(STATE_TYPE, noteType)
     }
 
     override fun onPause() {
@@ -170,16 +218,25 @@ class NoteEditor : AppCompatActivity() {
             // se compte en secondes.
             val loaded = withContext(Dispatchers.IO) {
                 val note = db.noteDao().loadFullNote(id) ?: return@withContext null
-                note to RichTextParser.parseAstToSpannable(note.bodyAst)
+                Loaded(
+                    note = note,
+                    body = RichTextParser.parseAstToSpannable(note.bodyAst),
+                    items = Checklist.parse(note.items)
+                )
             }
             if (loaded != null) {
-                val (note, body) = loaded
+                val note = loaded.note
                 persisted = true
                 colorKey = note.color
                 createdAt = note.createdAt
                 position = note.position
+                noteType = if (note.isChecklist) Note.TYPE_CHECKLIST else Note.TYPE_TEXT
                 titleView.setText(note.title)
-                bodyView.setText(body)
+                bodyView.setText(loaded.body)
+                checklistItems.clear()
+                checklistItems.addAll(loaded.items)
+                checklistAdapter.reload()
+                applyType()
                 applyColor()
             } else {
                 // La note n'existe plus (supprimée ailleurs): repartir d'un éditeur vierge.
@@ -231,10 +288,26 @@ class NoteEditor : AppCompatActivity() {
     /** Photographie de l'écran, prise sur le fil principal, seule à pouvoir lire les champs. */
     private fun snapshot(): Snapshot {
         val title = titleView.text?.toString()?.trim().orEmpty()
+        if (noteType == Note.TYPE_CHECKLIST) {
+            // Les lignes laissées vides ne sont pas enregistrées: une ligne qu'on a ouverte sans
+            // rien y écrire n'a pas à réapparaître à la prochaine ouverture.
+            val filled = Checklist.withoutBlanks(checklistItems)
+            return Snapshot(
+                title = title,
+                bodyAst = EMPTY_AST,
+                type = Note.TYPE_CHECKLIST,
+                items = Checklist.serialize(filled),
+                color = colorKey,
+                isEmpty = title.isEmpty() && filled.isEmpty()
+            )
+        }
+
         val body = bodyView.text
         return Snapshot(
             title = title,
             bodyAst = RichTextParser.generateAstJsonFromSpannable(body),
+            type = Note.TYPE_TEXT,
+            items = EMPTY_ITEMS,
             color = colorKey,
             isEmpty = title.isEmpty() && body.isNullOrBlank()
         )
@@ -263,12 +336,110 @@ class NoteEditor : AppCompatActivity() {
                     color = snapshot.color,
                     createdAt = createdAt,
                     updatedAt = System.currentTimeMillis(),
-                    position = position
+                    position = position,
+                    type = snapshot.type,
+                    items = snapshot.items
                 )
                 if (persisted) dao.update(note) else dao.insert(note).also { persisted = true }
             }
         }
         lastWritten = snapshot
+    }
+
+    // ===== Liste à cocher =====
+
+    private fun setupChecklist() {
+        checklistAdapter = ChecklistAdapter(
+            items = checklistItems,
+            onChanged = {
+                scheduleSave()
+                refreshMenu()
+            },
+            onStartDrag = { holder -> checklistTouchHelper.startDrag(holder) }
+        )
+        checklistView.layoutManager = LinearLayoutManager(this)
+        checklistView.adapter = checklistAdapter
+        // Le fondu croisé par défaut ferait clignoter le champ en cours de saisie à chaque fois
+        // qu'une autre ligne change d'état.
+        (checklistView.itemAnimator as? DefaultItemAnimator)?.supportsChangeAnimations = false
+        checklistTouchHelper = ItemTouchHelper(
+            ChecklistDragCallback(
+                canMove = checklistAdapter::isMovable,
+                canSwap = checklistAdapter::canSwap,
+                onMoved = checklistAdapter::moveRow,
+                onDragFinished = ::scheduleSave
+            )
+        )
+        checklistTouchHelper.attachToRecyclerView(checklistView)
+    }
+
+    /** Montre le corps correspondant au type, et met le menu en accord. */
+    private fun applyType() {
+        val isChecklist = noteType == Note.TYPE_CHECKLIST
+        bodyView.visibility = if (isChecklist) View.GONE else View.VISIBLE
+        checklistView.visibility = if (isChecklist) View.VISIBLE else View.GONE
+        // La mise en forme des caractères n'a pas cours dans une liste, comme dans Keep.
+        formatDivider.visibility = if (isChecklist) View.GONE else View.VISIBLE
+        formatToolbar.visibility = if (isChecklist) View.GONE else View.VISIBLE
+        titleView.imeOptions = if (isChecklist) EditorInfo.IME_ACTION_DONE else EditorInfo.IME_ACTION_NEXT
+        refreshMenu()
+    }
+
+    /**
+     * Le menu de la barre est déclaré en XML, donc jamais repréparé par le système: son état est
+     * remis d'aplomb à la main après chaque changement qui le concerne.
+     */
+    private fun refreshMenu() {
+        val menu = toolbar.menu
+        val isChecklist = noteType == Note.TYPE_CHECKLIST
+        val hasChecked = isChecklist && checklistAdapter.hasCheckedItems()
+        menu.findItem(R.id.action_toggle_checkboxes)?.setTitle(
+            if (isChecklist) R.string.note_hide_checkboxes else R.string.note_show_checkboxes
+        )
+        menu.findItem(R.id.action_uncheck_all)?.isVisible = hasChecked
+        menu.findItem(R.id.action_delete_checked)?.isVisible = hasChecked
+    }
+
+    /**
+     * Passage en liste: chaque ligne non vide du corps devient un élément. Le texte enrichi perd
+     * sa mise en forme au passage — une liste n'en porte pas — et c'est aussi ce que fait Keep.
+     */
+    private fun convertToChecklist() {
+        checklistItems.clear()
+        checklistItems.addAll(Checklist.fromText(bodyView.text))
+        bodyView.setText("")
+        noteType = Note.TYPE_CHECKLIST
+        checklistAdapter.reload()
+        applyType()
+        // Une note vide devient une liste vide: autant y ouvrir tout de suite la première ligne.
+        if (checklistItems.isEmpty()) checklistAdapter.appendItem()
+        scheduleSave()
+    }
+
+    /** Retour au texte: une ligne par élément, cases retirées et état de cochage perdu. */
+    private fun convertToText() {
+        bodyView.setText(Checklist.toText(checklistItems))
+        bodyView.setSelection(bodyView.text?.length ?: 0)
+        checklistItems.clear()
+        noteType = Note.TYPE_TEXT
+        checklistAdapter.reload()
+        applyType()
+        scheduleSave()
+    }
+
+    private fun deleteCheckedItems() {
+        val removed = checklistAdapter.deleteCheckedItems()
+        if (removed == 0) return
+        refreshMenu()
+        Snackbar.make(
+            rootView,
+            if (removed == 1) {
+                getString(R.string.note_checked_deleted_one)
+            } else {
+                getString(R.string.note_checked_deleted_other, removed)
+            },
+            Snackbar.LENGTH_SHORT
+        ).show()
     }
 
     // ===== Couleur de la note =====
@@ -457,19 +628,32 @@ class NoteEditor : AppCompatActivity() {
     private data class Snapshot(
         val title: String,
         val bodyAst: String,
+        val type: String,
+        val items: String,
         val color: String,
         val isEmpty: Boolean
     )
 
+    /** Note relue en base, ses deux corps déjà convertis hors du fil principal. */
+    private data class Loaded(
+        val note: Note,
+        val body: CharSequence,
+        val items: List<ChecklistItem>
+    )
+
     companion object {
         private const val EXTRA_NOTE_ID = "note_id"
+        private const val EXTRA_NOTE_TYPE = "note_type"
         private const val EXTRA_DELETE_REQUEST = "delete_request_id"
         private const val STATE_ID = "state_id"
         private const val STATE_COLOR = "state_color"
         private const val STATE_CREATED_AT = "state_created_at"
         private const val STATE_POSITION = "state_position"
         private const val STATE_PERSISTED = "state_persisted"
+        private const val STATE_TYPE = "state_type"
         private const val AUTO_SAVE_DELAY_MS = 700L
+        private const val EMPTY_AST = "[]"
+        private const val EMPTY_ITEMS = "[]"
 
         /** Palette de mise en forme du texte, alignée sur les pastilles de la barre d'outils. */
         private val TEXT_COLORS = mapOf(
@@ -491,10 +675,14 @@ class NoteEditor : AppCompatActivity() {
         @Volatile
         private var pendingSave: Job? = null
 
-        /** [noteId] nul pour une nouvelle note. */
-        fun intent(context: Context, noteId: String?): Intent =
+        /**
+         * [noteId] nul pour une nouvelle note; [type] ne vaut alors que pour celle-ci — une note
+         * existante ouvre toujours dans le type sous lequel elle a été enregistrée.
+         */
+        fun intent(context: Context, noteId: String?, type: String = Note.TYPE_TEXT): Intent =
             Intent(context, NoteEditor::class.java).apply {
                 noteId?.let { putExtra(EXTRA_NOTE_ID, it) }
+                putExtra(EXTRA_NOTE_TYPE, type)
             }
 
         /** Identifiant de la note dont l'éditeur demande la suppression, s'il y en a une. */

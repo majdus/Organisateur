@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Task::class, Alarm::class, Event::class, Note::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -85,6 +85,21 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Notes de type liste. Les notes existantes restent du texte, corps intact: les deux
+         * colonnes ajoutées prennent la valeur qu'aurait donnée l'entité à une note neuve.
+         */
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `notes` ADD COLUMN `type` TEXT NOT NULL DEFAULT 'text'"
+                )
+                database.execSQL(
+                    "ALTER TABLE `notes` ADD COLUMN `items` TEXT NOT NULL DEFAULT '[]'"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -92,7 +107,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "organisateur_database"
                 )
-                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 // Filet pour les chemins de version imprévus uniquement: toute évolution de
                 // schéma doit venir avec sa migration, sinon les données partent. Le `false`
                 // restreint la casse aux tables gérées par Room, comme le faisait la variante

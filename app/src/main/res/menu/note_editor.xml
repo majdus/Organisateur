@@ -13,4 +13,19 @@
         android:icon="@drawable/ic_delete_outline"
         android:title="@string/action_delete"
         app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_toggle_checkboxes"
+        android:title="@string/note_show_checkboxes"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_uncheck_all"
+        android:title="@string/note_uncheck_all"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_delete_checked"
+        android:title="@string/note_delete_checked"
+        app:showAsAction="never" />
 </menu>

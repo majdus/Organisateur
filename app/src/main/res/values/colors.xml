@@ -50,6 +50,7 @@
     <color name="accent_indigo">#6366F1</color>
     <color name="accent_violet">#8B5CF6</color>
     <color name="accent_soft">#EEF2FF</color>
+    <color name="scrim_light">#E6F8FAFC</color>
     <color name="danger">#EF4444</color>
     <color name="danger_soft">#FEF2F2</color>
 

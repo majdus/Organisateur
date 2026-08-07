@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Une ligne de liste: poignée, case, texte, croix. Les trois icônes sont alignées sur la
+     première ligne du texte et non centrées, pour ne pas partir à la dérive quand un élément
+     s'étale sur plusieurs lignes — d'où les marges hautes, et `baselineAligned` désactivé qui
+     sinon collerait la case sur la ligne de base du texte, une demi-police plus bas. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingHorizontal="12dp"
+    android:baselineAligned="false">
+
+    <ImageView
+        android:id="@+id/dragHandle"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:contentDescription="@string/note_checklist_reorder_item"
+        android:padding="4dp"
+        android:src="@drawable/ic_drag_handle"
+        app:tint="@color/text_tertiary" />
+
+    <CheckBox
+        android:id="@+id/checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@null"
+        android:button="@drawable/custom_checkbox_note"
+        android:buttonTint="@null"
+        android:contentDescription="@string/note_checklist_check_item"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        app:useMaterialThemeColors="false" />
+
+    <com.majdus.organisateur.ChecklistEditText
+        android:id="@+id/itemText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:background="@android:color/transparent"
+        android:hint="@string/note_checklist_item_hint"
+        android:imeOptions="actionNext|flagNoExtractUi"
+        android:inputType="textCapSentences"
+        android:lineSpacingExtra="4dp"
+        android:paddingVertical="10dp"
+        android:saveEnabled="false"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_tertiary"
+        android:textSize="16sp"
+        tools:ignore="Autofill"
+        tools:text="Pain" />
+
+    <ImageView
+        android:id="@+id/removeItem"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/note_checklist_remove_item"
+        android:focusable="true"
+        android:padding="7dp"
+        android:src="@drawable/ic_close"
+        app:tint="@color/text_tertiary" />
+</LinearLayout>
