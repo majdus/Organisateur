@@ -19,20 +19,38 @@ object RichTextParser {
         if (spanned.isNullOrEmpty()) return "[]"
 
         val jsonArray = JSONArray()
-        val text = spanned.toString()
-        var i = 0
+        // Le texte est recopié tronçon par tronçon, jamais en entier: sur une note volumineuse,
+        // un `toString()` de plus est une copie de plus à faire et à ramasser ensuite.
+        val chunk = StringBuilder()
+        var chunkBold = false
+        var chunkItalic = false
+        var chunkColor: Int? = null
 
+        fun flushChunk() {
+            if (chunk.isEmpty()) return
+            val jsonObject = JSONObject()
+            jsonObject.put("text", chunk.toString())
+            jsonObject.put("bold", chunkBold)
+            jsonObject.put("italic", chunkItalic)
+            if (chunkColor != null) {
+                jsonObject.put("color", chunkColor)
+            }
+            jsonArray.put(jsonObject)
+            chunk.setLength(0)
+        }
+
+        var i = 0
         while (i < spanned.length) {
             // Trouve le prochain index où un Span commence ou s'arrête
             val nextTransition = spanned.nextSpanTransition(i, spanned.length, CharacterStyle::class.java)
-            
+
             // Récupère tous les spans actifs pour ce tronçon de texte exact
             val spans = spanned.getSpans(i, nextTransition, CharacterStyle::class.java)
-            
+
             var isBold = false
             var isItalic = false
             var color: Int? = null
-            
+
             for (span in spans) {
                 if (span is StyleSpan) {
                     if (span.style == android.graphics.Typeface.BOLD || span.style == android.graphics.Typeface.BOLD_ITALIC) isBold = true
@@ -43,22 +61,25 @@ object RichTextParser {
                     color = span.foregroundColor
                 }
             }
-            
-            val chunkText = text.substring(i, nextTransition)
-            
-            val jsonObject = JSONObject()
-            jsonObject.put("text", chunkText)
-            jsonObject.put("bold", isBold)
-            jsonObject.put("italic", isItalic)
-            if (color != null) {
-                jsonObject.put("color", color)
+
+            // Deux tronçons voisins portant la même mise en forme n'en font qu'un. Mettre du gras
+            // en deux fois, ou rouvrir une note, laisse des spans bout à bout que rien ne
+            // distingue: les garder séparés multiplierait les spans à replacer à chaque frappe
+            // — le coût de la saisie grandirait au fil des mises en forme posées.
+            if (chunk.isNotEmpty() &&
+                (isBold != chunkBold || isItalic != chunkItalic || color != chunkColor)
+            ) {
+                flushChunk()
             }
-            
-            jsonArray.put(jsonObject)
-            
+            chunkBold = isBold
+            chunkItalic = isItalic
+            chunkColor = color
+            chunk.append(spanned, i, nextTransition)
+
             i = nextTransition
         }
-        
+        flushChunk()
+
         return jsonArray.toString()
     }
 
