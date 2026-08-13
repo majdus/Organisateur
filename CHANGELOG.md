@@ -4,6 +4,43 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
+## [2.5.1] — 2026-08-13
+
+### Corrigé
+- **L'édition d'une note volumineuse ne traîne plus.** À chaque lettre tapée ou effacée, Android
+  prévenait le remplissage automatique et la capture de contenu en leur passant la note entière,
+  copiée puis expédiée au système. Sur une note de plusieurs dizaines de milliers de caractères,
+  cela se répétait entre chaque frappe. Les champs de l'éditeur ne s'annoncent plus à ces deux
+  services, qui n'ont rien à faire dans une note.
+- **L'enregistrement automatique ne se met plus en travers de la saisie.** La conversion du corps
+  se faisait sur le fil principal, 700 ms après la dernière frappe — c'est-à-dire pile au moment
+  où l'on marque une pause. Seule la lecture des champs y reste désormais.
+- **Une note plus longue que la tranche lue pour les aperçus retrouve le sien.** Le corps d'une
+  note de texte ne formant qu'un seul élément, la carte de la grille restait muette au-delà de
+  4 000 caractères.
+- Le déplacement d'une ligne de liste interrompu par une sortie d'écran — un appel entrant en
+  plein glisser — n'est plus perdu.
+- Ce qui est tapé pendant la lecture d'une note volumineuse n'est plus balayé par le remplissage
+  des champs : ils n'acceptent la frappe qu'une fois le corps arrivé.
+
+### Notes techniques
+- L'éditeur suit un compteur de modifications : savoir s'il y a quelque chose à écrire ne coûte
+  plus une resérialisation complète de la note. Sortir de l'écran juste après un enregistrement
+  automatique ne réécrit donc plus rien, et ouvrir une note ne regénère plus son AST pour rien.
+- Une écriture rendue périmée par la frappe suivante est annulée plutôt que menée à son terme :
+  deux copies d'un corps volumineux ne vivent plus en parallèle. La section qui touche la base
+  est en revanche ininterruptible — une insertion coupée en deux réinsérerait la même clé
+  primaire. Un verrou et le rang de la version écrite empêchent une version périmée d'en écraser
+  une plus récente.
+- Le minuteur s'espace à 3 s au-delà de 20 000 caractères, mais rien ne reste en mémoire seule
+  plus de 5 s : un minuteur qui repart à chaque touche ne promet rien à qui écrit sans jamais
+  s'arrêter, et celui de 700 ms ne le promettait pas davantage.
+- Les tronçons voisins de même mise en forme sont fusionnés à l'écriture : moins de spans à
+  replacer à chaque frappe une fois la note rouverte, et un AST plus court.
+- `TruncatedJson` referme un texte coupé en plein milieu, échappements `\n` et `\uXXXX` compris.
+  Sept tests unitaires le couvrent, exécutables sans appareil : `org.json` n'étant qu'une coquille
+  vide dans le android.jar des tests unitaires, la vraie implémentation leur est fournie.
+
 ## [2.5.0] — 2026-08-07
 
 ### Ajouté
@@ -164,6 +201,9 @@ Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + corr
 Premières versions : tâches, rappels et calendrier, édition des éléments, interrupteur sur les
 rappels, jeu d'icônes. Voir l'historique Git pour le détail.
 
+[2.5.1]: https://github.com/majdus/Organisateur/releases/tag/v2.5.1
+[2.5.0]: https://github.com/majdus/Organisateur/releases/tag/v2.5.0
+[2.4.0]: https://github.com/majdus/Organisateur/releases/tag/v2.4.0
 [2.3.0]: https://github.com/majdus/Organisateur/releases/tag/v2.3.0
 [2.2.0]: https://github.com/majdus/Organisateur/releases/tag/v2.2.0
 [2.1.0]: https://github.com/majdus/Organisateur/releases/tag/v2.1.0
