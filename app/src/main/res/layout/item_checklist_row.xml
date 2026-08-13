@@ -45,6 +45,8 @@
         android:background="@android:color/transparent"
         android:hint="@string/note_checklist_item_hint"
         android:imeOptions="actionNext|flagNoExtractUi"
+        android:importantForAutofill="no"
+        android:importantForContentCapture="no"
         android:inputType="textCapSentences"
         android:lineSpacingExtra="4dp"
         android:paddingVertical="10dp"
@@ -52,7 +54,7 @@
         android:textColor="@color/text_primary"
         android:textColorHint="@color/text_tertiary"
         android:textSize="16sp"
-        tools:ignore="Autofill"
+        tools:targetApi="30"
         tools:text="Pain" />
 
     <ImageView

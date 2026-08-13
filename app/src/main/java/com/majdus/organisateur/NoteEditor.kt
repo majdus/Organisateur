@@ -8,7 +8,9 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.text.Spannable
+import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.LayoutInflater
@@ -35,8 +37,11 @@ import com.majdus.organisateur.data.isChecklist
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -81,9 +86,11 @@ class NoteEditor : AppCompatActivity() {
     private var position: Int = 0
 
     /** La note existe-t-elle en base ? Faux tant que rien n'a été écrit. */
+    @Volatile
     private var persisted = false
 
     /** Après suppression, plus rien ne doit être réécrit par l'enregistrement automatique. */
+    @Volatile
     private var discarded = false
 
     /**
@@ -95,13 +102,36 @@ class NoteEditor : AppCompatActivity() {
      */
     private var contentLoaded = false
 
-    private var lastWritten: Snapshot? = null
+    /**
+     * Rang de la dernière modification faite à l'écran, et rang de la dernière écrite en base.
+     *
+     * Savoir s'il y a quelque chose à enregistrer ne coûte ainsi qu'une comparaison d'entiers.
+     * Comparer les contenus obligeait au contraire à resérialiser la note entière avant de
+     * pouvoir conclure qu'elle n'avait pas bougé — le plus cher, pour rien.
+     */
+    private var revision = 0
+
+    @Volatile
+    private var savedRevision = 0
+
+    /**
+     * Heure de la première modification non encore enregistrée, zéro s'il n'y en a pas.
+     *
+     * Le minuteur repart à chaque frappe: à lui seul, il ne promet donc rien à qui écrit sans
+     * jamais s'arrêter. C'est cette date qui borne l'attente — passé [MAX_UNSAVED_MS], la note
+     * part en base même si la frappe continue.
+     */
+    private var dirtySince = 0L
+
+    /** Une seule écriture à la fois: la sortie d'écran peut tomber sur un enregistrement en vol. */
+    private val writeLock = Mutex()
+
+    /** Écriture en cours, et rang de la version qu'elle porte. */
+    private var runningSave: Job? = null
+    private var launchedRevision = 0
 
     private val autoSave = Handler(Looper.getMainLooper())
-    private val autoSaveTask = Runnable {
-        val snapshot = snapshot()
-        lifecycleScope.launch { write(snapshot) }
-    }
+    private val autoSaveTask = Runnable { saveNow() }
 
     private var isBoldActive = false
     private var isItalicActive = false
@@ -170,6 +200,7 @@ class NoteEditor : AppCompatActivity() {
             // un texte long n'y tient pas (limite des transactions Binder) et se retrouverait
             // silencieusement vide.
             applyType()
+            setInputEnabled(false)
             loadNote(noteId)
         } else {
             contentLoaded = true
@@ -200,11 +231,7 @@ class NoteEditor : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        autoSave.removeCallbacks(autoSaveTask)
-        // L'écriture est confiée à une portée indépendante de l'activité: partir par le bouton
-        // d'accueil détruit la portée du cycle de vie, et la note serait perdue en chemin.
-        val snapshot = snapshot()
-        pendingSave = backgroundSaves.launch { write(snapshot) }
+        saveNow()
     }
 
     private fun loadNote(id: String) {
@@ -245,9 +272,27 @@ class NoteEditor : AppCompatActivity() {
             // Les observateurs sont posés après le remplissage: sinon le chargement lui-même
             // compterait comme une modification.
             contentLoaded = true
+            setInputEnabled(true)
             startWatching()
-            lastWritten = snapshot()
+            // Ce qui vient d'être affiché est exactement ce qui est en base: rien à réécrire, et
+            // surtout pas d'AST à regénérer pour s'en convaincre.
+            savedRevision = revision
         }
+    }
+
+    /**
+     * Le temps que le corps arrive, les champs n'acceptent pas la frappe.
+     *
+     * La lecture d'une note volumineuse prend un instant, et ce qui aurait été tapé entre-temps
+     * serait balayé sans bruit par le remplissage. Rien n'y paraît: les champs gardent leur
+     * aspect, ils ne prennent simplement pas encore le curseur — et le clavier ne s'ouvre pas
+     * de lui-même sur cet écran.
+     */
+    private fun setInputEnabled(enabled: Boolean) {
+        titleView.isFocusable = enabled
+        titleView.isFocusableInTouchMode = enabled
+        bodyView.isFocusable = enabled
+        bodyView.isFocusableInTouchMode = enabled
     }
 
     private fun startWatching() {
@@ -256,17 +301,67 @@ class NoteEditor : AppCompatActivity() {
     }
 
     private fun scheduleSave() {
+        revision++
+        val now = SystemClock.uptimeMillis()
+        if (dirtySince == 0L) dirtySince = now
         autoSave.removeCallbacks(autoSaveTask)
-        autoSave.postDelayed(autoSaveTask, AUTO_SAVE_DELAY_MS)
+        // Le minuteur ordinaire, sauf s'il repousserait l'écriture au-delà de ce qu'on s'autorise
+        // à garder en mémoire seule.
+        val deadline = dirtySince + MAX_UNSAVED_MS
+        val delay = (now + autoSaveDelay()).coerceAtMost(deadline) - now
+        autoSave.postDelayed(autoSaveTask, delay.coerceAtLeast(0))
+    }
+
+    /**
+     * Un corps volumineux se réécrit en entier à chaque enregistrement: copié, converti en JSON,
+     * puis reposé en base ligne complète. À 700 ms, une frappe soutenue relance tout cela sans
+     * répit, et le va-et-vient de mémoire finit par se voir à l'écran. On espace donc au-delà
+     * d'un certain volume — sans rien risquer, la sortie d'écran enregistrant de toute façon.
+     */
+    private fun autoSaveDelay(): Long {
+        val length = if (noteType == Note.TYPE_CHECKLIST) 0 else bodyView.text?.length ?: 0
+        return if (length >= LARGE_BODY_CHARS) LARGE_BODY_SAVE_DELAY_MS else AUTO_SAVE_DELAY_MS
+    }
+
+    /**
+     * Lance l'écriture s'il y a quelque chose de neuf, et renvoie la tâche correspondante.
+     *
+     * L'écriture est confiée à une portée indépendante de l'activité: partir par le bouton
+     * d'accueil détruit la portée du cycle de vie, et la note serait perdue en chemin.
+     */
+    private fun saveNow(): Job? {
+        autoSave.removeCallbacks(autoSaveTask)
+        if (!contentLoaded || discarded || revision == savedRevision) return null
+        // L'écriture en cours porte déjà exactement ce qu'il y a à l'écran: on la laisse finir
+        // plutôt que d'en relancer une identique — c'est le cas de la sortie d'écran juste
+        // après un enregistrement automatique.
+        val running = runningSave
+        if (revision == launchedRevision && running?.isActive == true) return running
+        // Sinon sa version est périmée avant même d'être écrite. La laisser courir ferait vivre
+        // deux copies du corps en mémoire et mènerait deux conversions au bout pour un seul
+        // résultat utile — sur une note volumineuse, cela se paie comptant.
+        running?.cancel()
+        val capture = capture()
+        val revision = revision
+        launchedRevision = revision
+        // Ce qui est à l'écran est désormais en route vers la base: l'attente repart de zéro.
+        dirtySince = 0L
+        return backgroundSaves.launch { write(capture, revision) }.also {
+            runningSave = it
+            pendingSave = it
+        }
     }
 
     private fun saveAndFinish() {
-        autoSave.removeCallbacks(autoSaveTask)
-        val snapshot = snapshot()
+        val save = saveNow()
+        if (save == null) {
+            finish()
+            return
+        }
         lifecycleScope.launch {
             // On attend la fin de l'écriture: la liste se rafraîchit dès notre disparition et
             // doit voir la note à jour.
-            write(snapshot)
+            save.join()
             if (!isFinishing) finish()
         }
     }
@@ -285,65 +380,104 @@ class NoteEditor : AppCompatActivity() {
         finish()
     }
 
-    /** Photographie de l'écran, prise sur le fil principal, seule à pouvoir lire les champs. */
-    private fun snapshot(): Snapshot {
+    /**
+     * Photographie de l'écran, prise sur le fil principal — seul à pouvoir lire les champs — et
+     * réduite au strict nécessaire: on recopie le corps, on ne le convertit pas.
+     *
+     * La distinction fait tout le confort de frappe. Recopier un texte est une recopie de
+     * tableau; le convertir en JSON le parcourt plusieurs fois, l'échappe caractère par
+     * caractère et en alloue autant de chaînes intermédiaires — sur une note fournie, cela se
+     * voyait à chaque pause dans la saisie, l'enregistrement automatique tombant justement là.
+     */
+    private fun capture(): Capture {
         val title = titleView.text?.toString()?.trim().orEmpty()
         if (noteType == Note.TYPE_CHECKLIST) {
+            return Capture(
+                title = title,
+                body = null,
+                items = checklistItems.map { it.copy() },
+                type = Note.TYPE_CHECKLIST,
+                color = colorKey
+            )
+        }
+        // Copie figée: la conversion lit des spans que l'utilisateur continue de modifier
+        // pendant ce temps, et un Spannable ne se lit pas depuis deux fils à la fois.
+        val body = bodyView.text?.let { SpannableString(it) }
+        return Capture(
+            title = title,
+            body = body,
+            items = emptyList(),
+            type = Note.TYPE_TEXT,
+            color = colorKey
+        )
+    }
+
+    /** Conversion vers ce qui part en base. C'est la partie coûteuse: jamais sur le fil principal. */
+    private fun Capture.toSnapshot(): Snapshot {
+        if (type == Note.TYPE_CHECKLIST) {
             // Les lignes laissées vides ne sont pas enregistrées: une ligne qu'on a ouverte sans
             // rien y écrire n'a pas à réapparaître à la prochaine ouverture.
-            val filled = Checklist.withoutBlanks(checklistItems)
+            val filled = Checklist.withoutBlanks(items)
             return Snapshot(
                 title = title,
                 bodyAst = EMPTY_AST,
                 type = Note.TYPE_CHECKLIST,
                 items = Checklist.serialize(filled),
-                color = colorKey,
+                color = color,
                 isEmpty = title.isEmpty() && filled.isEmpty()
             )
         }
-
-        val body = bodyView.text
         return Snapshot(
             title = title,
             bodyAst = RichTextParser.generateAstJsonFromSpannable(body),
             type = Note.TYPE_TEXT,
             items = EMPTY_ITEMS,
-            color = colorKey,
+            color = color,
             isEmpty = title.isEmpty() && body.isNullOrBlank()
         )
     }
 
-    private suspend fun write(snapshot: Snapshot) {
+    private suspend fun write(capture: Capture, revision: Int) {
         // contentLoaded: sans corps chargé, un champ vide ne veut rien dire — et surtout pas
         // que la note doit être supprimée.
-        if (!contentLoaded || discarded || snapshot == lastWritten) return
+        if (!contentLoaded || discarded) return
+        val snapshot = withContext(Dispatchers.Default) { capture.toSnapshot() }
         val dao = db.noteDao()
-        withContext(Dispatchers.IO) {
-            if (snapshot.isEmpty) {
-                // Rien à garder: une note vide ne mérite pas une carte dans la liste.
-                if (persisted) {
-                    dao.deleteById(noteId)
-                    persisted = false
+        writeLock.withLock {
+            // Une écriture plus récente a pu passer devant pendant la conversion — sortie
+            // d'écran juste après une frappe: c'est sa version qui fait foi, pas celle-ci.
+            if (discarded || revision <= savedRevision) return
+            // Passé ce point, l'écriture va jusqu'au bout même si sa tâche est abandonnée: une
+            // insertion interrompue entre la ligne posée et l'état mis à jour ferait réinsérer
+            // la même note ensuite, et la clé primaire ne le pardonnerait pas. Il n'y en a que
+            // pour une ligne.
+            withContext(NonCancellable + Dispatchers.IO) {
+                if (snapshot.isEmpty) {
+                    // Rien à garder: une note vide ne mérite pas une carte dans la liste.
+                    if (persisted) {
+                        dao.deleteById(noteId)
+                        persisted = false
+                    }
+                } else {
+                    // Une note qui vient de naître se pose en tête de grille, juste avant la
+                    // première: aucune autre ligne n'a besoin d'être renumérotée pour cela.
+                    if (!persisted) position = (dao.minPosition() ?: 0) - 1
+                    val note = Note(
+                        id = noteId,
+                        title = snapshot.title,
+                        bodyAst = snapshot.bodyAst,
+                        color = snapshot.color,
+                        createdAt = createdAt,
+                        updatedAt = System.currentTimeMillis(),
+                        position = position,
+                        type = snapshot.type,
+                        items = snapshot.items
+                    )
+                    if (persisted) dao.update(note) else dao.insert(note).also { persisted = true }
                 }
-            } else {
-                // Une note qui vient de naître se pose en tête de grille, juste avant la
-                // première: aucune autre ligne n'a besoin d'être renumérotée pour cela.
-                if (!persisted) position = (dao.minPosition() ?: 0) - 1
-                val note = Note(
-                    id = noteId,
-                    title = snapshot.title,
-                    bodyAst = snapshot.bodyAst,
-                    color = snapshot.color,
-                    createdAt = createdAt,
-                    updatedAt = System.currentTimeMillis(),
-                    position = position,
-                    type = snapshot.type,
-                    items = snapshot.items
-                )
-                if (persisted) dao.update(note) else dao.insert(note).also { persisted = true }
+                savedRevision = revision
             }
         }
-        lastWritten = snapshot
     }
 
     // ===== Liste à cocher =====
@@ -366,7 +500,14 @@ class NoteEditor : AppCompatActivity() {
             ChecklistDragCallback(
                 canMove = checklistAdapter::isMovable,
                 canSwap = checklistAdapter::canSwap,
-                onMoved = checklistAdapter::moveRow,
+                onMoved = { from, to ->
+                    checklistAdapter.moveRow(from, to)
+                    // L'ordre a changé dès maintenant, même si l'enregistrement, lui, attend la
+                    // fin du glisser. Le compteur doit le savoir tout de suite: un écran quitté
+                    // le doigt encore posé n'aurait sinon rien à enregistrer, et le déplacement
+                    // serait perdu.
+                    revision++
+                },
                 onDragFinished = ::scheduleSave
             )
         )
@@ -625,6 +766,18 @@ class NoteEditor : AppCompatActivity() {
         }
     }
 
+    /**
+     * L'écran tel qu'il vient d'être lu, encore brut. [body] ne vaut que pour une note de texte,
+     * [items] que pour une liste — les deux corps ne coexistent jamais.
+     */
+    private class Capture(
+        val title: String,
+        val body: Spannable?,
+        val items: List<ChecklistItem>,
+        val type: String,
+        val color: String
+    )
+
     private data class Snapshot(
         val title: String,
         val bodyAst: String,
@@ -652,6 +805,17 @@ class NoteEditor : AppCompatActivity() {
         private const val STATE_PERSISTED = "state_persisted"
         private const val STATE_TYPE = "state_type"
         private const val AUTO_SAVE_DELAY_MS = 700L
+
+        /** Au-delà, le corps coûte assez cher à écrire pour qu'on y revienne moins souvent. */
+        private const val LARGE_BODY_CHARS = 20_000
+        private const val LARGE_BODY_SAVE_DELAY_MS = 3_000L
+
+        /**
+         * Rien de saisi ne reste en mémoire seule plus longtemps que cela, frappe continue
+         * comprise. Le minuteur ordinaire ne le garantissait pas: il repart à chaque touche.
+         */
+        private const val MAX_UNSAVED_MS = 5_000L
+
         private const val EMPTY_AST = "[]"
         private const val EMPTY_ITEMS = "[]"
 

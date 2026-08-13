@@ -25,8 +25,8 @@ android {
         // Aligné sur le tag Git. versionCode dérivé du nom de version
         // (majeure * 10000 + mineure * 100 + correctif), afin qu'il reste croissant
         // et lisible: 2.1.0 -> 20100.
-        versionCode 20500
-        versionName "2.5.0"
+        versionCode 20501
+        versionName "2.5.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -80,6 +80,10 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.2"
 
     testImplementation 'junit:junit:4.+'
+    // `org.json` n'est qu'une coquille vide dans le android.jar des tests unitaires: la vraie
+    // implémentation permet de vérifier sur la machine de développement que ce qu'on répare
+    // d'un JSON tronqué se relit bien.
+    testImplementation 'org.json:json:20240303'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }
