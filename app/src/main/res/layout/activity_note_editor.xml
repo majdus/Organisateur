@@ -30,6 +30,8 @@
         android:fontFamily="sans-serif-medium"
         android:hint="@string/note_title_hint"
         android:imeOptions="actionNext"
+        android:importantForAutofill="no"
+        android:importantForContentCapture="no"
         android:inputType="textCapSentences"
         android:letterSpacing="-0.02"
         android:maxLength="120"
@@ -40,8 +42,14 @@
         android:textColor="@color/text_primary"
         android:textColorHint="@color/text_tertiary"
         android:textSize="22sp"
-        tools:ignore="Autofill" />
+        tools:targetApi="30" />
 
+    <!-- Ni remplissage automatique ni capture de contenu sur le corps de la note.
+         Ce n'est pas un réglage de confort mais la condition d'une frappe fluide: à chaque
+         touche, `TextView` prévient ces deux services en leur passant le texte entier — copié,
+         puis expédié au système. Sur une note de plusieurs dizaines de milliers de caractères,
+         cela se fait donc à chaque lettre tapée ou effacée, et c'est ce qui rendait l'édition
+         poussive. Aucun des deux n'a de sens ici: on ne remplit pas une note automatiquement. -->
     <EditText
         android:id="@+id/note"
         android:layout_width="match_parent"
@@ -51,6 +59,8 @@
         android:background="@android:color/transparent"
         android:gravity="top|start"
         android:hint="@string/notes_hint"
+        android:importantForAutofill="no"
+        android:importantForContentCapture="no"
         android:inputType="textMultiLine|textCapSentences"
         android:lineSpacingExtra="6dp"
         android:paddingHorizontal="24dp"
@@ -60,7 +70,7 @@
         android:textColor="@color/text_primary"
         android:textColorHint="@color/text_tertiary"
         android:textSize="16sp"
-        tools:ignore="Autofill" />
+        tools:targetApi="30" />
 
     <!-- La liste à cocher prend la place du corps de texte: une note est de l'un ou l'autre
          type, jamais des deux à la fois. -->
