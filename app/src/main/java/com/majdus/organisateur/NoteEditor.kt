@@ -2,6 +2,7 @@ package com.majdus.organisateur
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
@@ -9,8 +10,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.text.Selection
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.SpanWatcher
+import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.LayoutInflater
@@ -133,6 +137,30 @@ class NoteEditor : AppCompatActivity() {
     private val autoSave = Handler(Looper.getMainLooper())
     private val autoSaveTask = Runnable { saveNow() }
 
+    /**
+     * La mise en forme qui vaut pour toute la note, portée par le champ de saisie lui-même
+     * plutôt que par un span.
+     *
+     * Un span couvrant le document fait remettre en page tout ce qui suit le curseur à chaque
+     * frappe — voir [RichTextParser.parseAstToBody]. Hissée ici, la même mise en forme ne coûte
+     * rien. Elle redescend en spans dès qu'on touche à la barre de mise en forme, pour que
+     * retirer le gras d'un passage reste possible: voir [materialiseBaseStyle].
+     */
+    private var baseStyle: RichTextParser.Style? = null
+
+    /** Aspect du champ sans style de base, relevé une fois pour pouvoir y revenir. */
+    private var defaultTypeface: Typeface? = null
+    private var defaultTextColors: ColorStateList? = null
+
+    private lateinit var boldButton: View
+    private lateinit var italicButton: View
+
+    /** Les pastilles et leur teinte, résolues une fois: [refreshFormatState] passe très souvent. */
+    private lateinit var colorSwatches: List<Pair<View, Int>>
+
+    /** Faux avant la première lecture, pour qu'elle s'applique même si l'état paraît inchangé. */
+    private var formatStateKnown = false
+
     private var isBoldActive = false
     private var isItalicActive = false
     private var activeColor: Int? = null
@@ -179,6 +207,9 @@ class NoteEditor : AppCompatActivity() {
             }
         }
 
+        defaultTypeface = bodyView.typeface
+        defaultTextColors = bodyView.textColors
+
         setupFormatToolbar()
         setupChecklist()
 
@@ -205,6 +236,7 @@ class NoteEditor : AppCompatActivity() {
         } else {
             contentLoaded = true
             applyType()
+            watchSelection()
             // Une liste qu'on vient d'ouvrir s'ouvre sur sa première ligne, curseur dedans:
             // c'est la seule chose qu'on puisse vouloir y faire.
             if (noteType == Note.TYPE_CHECKLIST && checklistItems.isEmpty()) {
@@ -247,7 +279,7 @@ class NoteEditor : AppCompatActivity() {
                 val note = db.noteDao().loadFullNote(id) ?: return@withContext null
                 Loaded(
                     note = note,
-                    body = RichTextParser.parseAstToSpannable(note.bodyAst),
+                    body = RichTextParser.parseAstToBody(note.bodyAst),
                     items = Checklist.parse(note.items)
                 )
             }
@@ -259,7 +291,10 @@ class NoteEditor : AppCompatActivity() {
                 position = note.position
                 noteType = if (note.isChecklist) Note.TYPE_CHECKLIST else Note.TYPE_TEXT
                 titleView.setText(note.title)
-                bodyView.setText(loaded.body)
+                baseStyle = loaded.body.base
+                applyBaseStyle()
+                bodyView.setText(loaded.body.text)
+                watchSelection()
                 checklistItems.clear()
                 checklistItems.addAll(loaded.items)
                 checklistAdapter.reload()
@@ -395,6 +430,7 @@ class NoteEditor : AppCompatActivity() {
             return Capture(
                 title = title,
                 body = null,
+                base = null,
                 items = checklistItems.map { it.copy() },
                 type = Note.TYPE_CHECKLIST,
                 color = colorKey
@@ -406,6 +442,7 @@ class NoteEditor : AppCompatActivity() {
         return Capture(
             title = title,
             body = body,
+            base = baseStyle,
             items = emptyList(),
             type = Note.TYPE_TEXT,
             color = colorKey
@@ -429,7 +466,7 @@ class NoteEditor : AppCompatActivity() {
         }
         return Snapshot(
             title = title,
-            bodyAst = RichTextParser.generateAstJsonFromSpannable(body),
+            bodyAst = RichTextParser.generateAstJsonFromSpannable(body, base),
             type = Note.TYPE_TEXT,
             items = EMPTY_ITEMS,
             color = color,
@@ -549,6 +586,8 @@ class NoteEditor : AppCompatActivity() {
         checklistItems.clear()
         checklistItems.addAll(Checklist.fromText(bodyView.text))
         bodyView.setText("")
+        baseStyle = null
+        applyBaseStyle()
         noteType = Note.TYPE_CHECKLIST
         checklistAdapter.reload()
         applyType()
@@ -565,6 +604,8 @@ class NoteEditor : AppCompatActivity() {
         noteType = Note.TYPE_TEXT
         checklistAdapter.reload()
         applyType()
+        // Après le changement de type: l'état de la barre ne se relit que sur une note de texte.
+        watchSelection()
         scheduleSave()
     }
 
@@ -620,33 +661,222 @@ class NoteEditor : AppCompatActivity() {
         window.setBackgroundDrawable(ColorDrawable(color))
     }
 
+    // ===== Style de base =====
+
+    /** Reflète [baseStyle] sur le champ de saisie, ou lui rend son aspect ordinaire. */
+    private fun applyBaseStyle() {
+        val base = baseStyle
+        val style = when {
+            base == null -> Typeface.NORMAL
+            base.bold && base.italic -> Typeface.BOLD_ITALIC
+            base.bold -> Typeface.BOLD
+            base.italic -> Typeface.ITALIC
+            else -> Typeface.NORMAL
+        }
+        bodyView.setTypeface(defaultTypeface, style)
+        val color = base?.color
+        if (color != null) bodyView.setTextColor(color) else defaultTextColors?.let(bodyView::setTextColor)
+    }
+
+    /**
+     * Redescend le style de base en spans sur tout le corps, et rend au champ son aspect
+     * ordinaire.
+     *
+     * Hissé sur le champ, un style ne se retire plus par endroits: `StyleSpan` ne sait
+     * qu'ajouter du gras, jamais en enlever. Toucher à la barre de mise en forme fait donc
+     * d'abord redescendre le style là où les boutons savent le manipuler. La frappe y perd ce
+     * qu'elle avait gagné, mais seulement sur une note qu'on met réellement en forme — et
+     * l'ouverture suivante la hissera de nouveau si elle est redevenue uniforme.
+     */
+    private fun materialiseBaseStyle() {
+        val base = baseStyle ?: return
+        baseStyle = null
+        applyBaseStyle()
+        val text = bodyView.text as? Spannable ?: return
+        if (text.isEmpty()) return
+        if (base.bold) {
+            text.setSpan(StyleSpan(Typeface.BOLD), 0, text.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        if (base.italic) {
+            text.setSpan(StyleSpan(Typeface.ITALIC), 0, text.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        base.color?.let {
+            text.setSpan(ForegroundColorSpan(it), 0, text.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+    }
+
+    // ===== État de la barre de mise en forme =====
+
+    /**
+     * Fait suivre la barre au curseur.
+     *
+     * Les boutons étaient de simples bascules aveugles: on pouvait sélectionner un passage en
+     * gras sans que le B s'allume, et la première pression *ajoutait* du gras là où il y en avait
+     * déjà — il en fallait donc deux pour l'enlever. Tant que le gras venait d'un span cela
+     * passait à peu près inaperçu; porté par le champ lui-même, on voyait du gras partout avec un
+     * bouton éteint.
+     *
+     * L'état est donc relu sous le curseur, [baseStyle] compris, à chaque déplacement de la
+     * sélection.
+     */
+    private fun refreshFormatState() {
+        if (noteType == Note.TYPE_CHECKLIST) return
+        val text = bodyView.text ?: return
+        val start = bodyView.selectionStart
+        val end = bodyView.selectionEnd
+        if (start < 0 || end < 0) return
+
+        val base = baseStyle
+        val bold = base?.bold == true || hasStyleAt(text, start, end, Typeface.BOLD)
+        val italic = base?.italic == true || hasStyleAt(text, start, end, Typeface.ITALIC)
+        val color = base?.color ?: colorAt(text, start, end)
+
+        // Le curseur bouge à chaque frappe et à chaque effacement, donc ceci s'exécute aussi
+        // souvent que la saisie elle-même — et l'effacement maintenu va bien plus vite que la
+        // frappe. Tant que l'état n'a pas changé, on ne touche à aucune vue: repeindre les
+        // pastilles pour rien coûtait un chargement d'image et une invalidation par appui.
+        if (formatStateKnown && bold == isBoldActive && italic == isItalicActive &&
+            color == activeColor
+        ) {
+            return
+        }
+        formatStateKnown = true
+        isBoldActive = bold
+        isItalicActive = italic
+        activeColor = color
+
+        boldButton.isSelected = bold
+        italicButton.isSelected = italic
+        for ((swatch, swatchColor) in colorSwatches) {
+            val lit = color == swatchColor
+            swatch.isSelected = lit
+            swatch.setBackgroundResource(if (lit) R.drawable.bg_swatch_ring else 0)
+        }
+    }
+
+    /**
+     * Observe les déplacements du curseur. La sélection d'un `Editable` est elle-même faite de
+     * spans, et un `SpanWatcher` est le seul moyen de les suivre sans dériver de `EditText`.
+     *
+     * À reposer après chaque `setText`: le champ remplace alors son tampon, et l'observateur
+     * partirait avec l'ancien.
+     */
+    private fun watchSelection() {
+        val text = bodyView.text as? Spannable ?: return
+        text.setSpan(selectionWatcher, 0, text.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+        refreshFormatState()
+    }
+
+    private val selectionWatcher = object : SpanWatcher {
+        override fun onSpanAdded(text: Spannable, what: Any, start: Int, end: Int) = Unit
+        override fun onSpanRemoved(text: Spannable, what: Any, start: Int, end: Int) = Unit
+        override fun onSpanChanged(
+            text: Spannable,
+            what: Any,
+            ostart: Int,
+            oend: Int,
+            nstart: Int,
+            nend: Int
+        ) {
+            if (what === Selection.SELECTION_END) refreshFormatState()
+        }
+    }
+
+    /**
+     * Le style s'applique-t-il là où l'on écrirait ?
+     *
+     * Sélection vide, ce qui compte est ce dont hériterait le prochain caractère: soit une marque
+     * de longueur nulle posée par les boutons, soit un span dans lequel le curseur se trouve
+     * *strictement* — un span qui s'arrête pile sur le curseur ne déborde pas sur la suite, c'est
+     * précisément ce qui se passe quand on vient de couper le gras.
+     *
+     * Sur une sélection, le style doit la couvrir de bout en bout: sans quoi la première pression
+     * du bouton l'enlèverait là où il est, au lieu de le poser partout.
+     */
+    private fun hasStyleAt(text: CharSequence, start: Int, end: Int, style: Int): Boolean {
+        val spanned = text as? Spanned ?: return false
+        val matching = { span: StyleSpan ->
+            span.style == style || span.style == Typeface.BOLD_ITALIC
+        }
+        if (start == end) {
+            for (span in spanned.getSpans(start, start, StyleSpan::class.java)) {
+                if (!matching(span)) continue
+                val from = spanned.getSpanStart(span)
+                val to = spanned.getSpanEnd(span)
+                if (from == start && to == start) return true
+                if (from < start && to > start) return true
+            }
+            return false
+        }
+        var covered = start
+        val spans = spanned.getSpans(start, end, StyleSpan::class.java)
+            .filter(matching)
+            .sortedBy { spanned.getSpanStart(it) }
+        for (span in spans) {
+            if (spanned.getSpanStart(span) > covered) break
+            covered = maxOf(covered, spanned.getSpanEnd(span))
+            if (covered >= end) return true
+        }
+        return false
+    }
+
+    /** Même lecture pour la couleur: celle qui vaut partout où l'on écrirait, sinon aucune. */
+    private fun colorAt(text: CharSequence, start: Int, end: Int): Int? {
+        val spanned = text as? Spanned ?: return null
+        if (start == end) {
+            for (span in spanned.getSpans(start, start, ForegroundColorSpan::class.java)) {
+                val from = spanned.getSpanStart(span)
+                val to = spanned.getSpanEnd(span)
+                if (from == start && to == start) return span.foregroundColor
+                if (from < start && to > start) return span.foregroundColor
+            }
+            return null
+        }
+        var covered = start
+        var found: Int? = null
+        val spans = spanned.getSpans(start, end, ForegroundColorSpan::class.java)
+            .sortedBy { spanned.getSpanStart(it) }
+        for (span in spans) {
+            if (spanned.getSpanStart(span) > covered) return null
+            if (found != null && found != span.foregroundColor) return null
+            found = span.foregroundColor
+            covered = maxOf(covered, spanned.getSpanEnd(span))
+            if (covered >= end) return found
+        }
+        return null
+    }
+
     // ===== Mise en forme du texte =====
 
     private fun setupFormatToolbar() {
-        val boldButton = findViewById<View>(R.id.btn_bold)
-        val italicButton = findViewById<View>(R.id.btn_italic)
+        boldButton = findViewById(R.id.btn_bold)
+        italicButton = findViewById(R.id.btn_italic)
 
         boldButton.setOnClickListener {
+            materialiseBaseStyle()
             isBoldActive = !isBoldActive
-            boldButton.isSelected = isBoldActive
             toggleStyleForTyping(Typeface.BOLD, isBoldActive)
+            refreshFormatState()
             scheduleSave()
         }
         italicButton.setOnClickListener {
+            materialiseBaseStyle()
             isItalicActive = !isItalicActive
-            italicButton.isSelected = isItalicActive
             toggleStyleForTyping(Typeface.ITALIC, isItalicActive)
+            refreshFormatState()
             scheduleSave()
         }
 
-        for ((id, hex) in TEXT_COLORS) {
-            findViewById<View>(id).setOnClickListener {
-                toggleColor(it, Color.parseColor(hex))
-            }
+        colorSwatches = TEXT_COLORS.map { (id, hex) ->
+            findViewById<View>(id) to Color.parseColor(hex)
+        }
+        for ((swatch, color) in colorSwatches) {
+            swatch.setOnClickListener { toggleColor(it, color) }
         }
     }
 
     private fun toggleColor(view: View, color: Int) {
+        materialiseBaseStyle()
         if (activeColor == color) {
             activeColor = null
             view.isSelected = false
@@ -654,17 +884,16 @@ class NoteEditor : AppCompatActivity() {
             toggleColorForTyping(color, false)
         } else {
             // Une seule couleur active à la fois: l'anneau de sélection quitte les autres.
-            for (id in TEXT_COLORS.keys) {
-                findViewById<View>(id).apply {
-                    isSelected = false
-                    setBackgroundResource(0)
-                }
+            for ((swatch, _) in colorSwatches) {
+                swatch.isSelected = false
+                swatch.setBackgroundResource(0)
             }
             activeColor = color
             view.isSelected = true
             view.setBackgroundResource(R.drawable.bg_swatch_ring)
             toggleColorForTyping(color, true)
         }
+        refreshFormatState()
         // Poser un span ne modifie pas le texte: les observateurs de saisie ne se déclenchent
         // pas, il faut donc redéclencher l'enregistrement à la main.
         scheduleSave()
@@ -773,6 +1002,8 @@ class NoteEditor : AppCompatActivity() {
     private class Capture(
         val title: String,
         val body: Spannable?,
+        /** Mise en forme portée par le champ plutôt que par des spans. Voir [baseStyle]. */
+        val base: RichTextParser.Style?,
         val items: List<ChecklistItem>,
         val type: String,
         val color: String
@@ -790,7 +1021,7 @@ class NoteEditor : AppCompatActivity() {
     /** Note relue en base, ses deux corps déjà convertis hors du fil principal. */
     private data class Loaded(
         val note: Note,
-        val body: CharSequence,
+        val body: RichTextParser.Body,
         val items: List<ChecklistItem>
     )
 

@@ -44,7 +44,11 @@
         android:textSize="22sp"
         tools:targetApi="30" />
 
-    <!-- Ni remplissage automatique ni capture de contenu sur le corps de la note.
+    <!-- `flagNoExtractUi`: en paysage, le clavier s'affiche autrement en plein écran et recopie
+         le corps dans son propre champ, texte entier expédié au processus du clavier à chaque
+         frappe. Les lignes de liste à cocher s'en gardaient déjà.
+
+         Ni remplissage automatique ni capture de contenu sur le corps de la note.
          Ce n'est pas un réglage de confort mais la condition d'une frappe fluide: à chaque
          touche, `TextView` prévient ces deux services en leur passant le texte entier — copié,
          puis expédié au système. Sur une note de plusieurs dizaines de milliers de caractères,
@@ -59,6 +63,7 @@
         android:background="@android:color/transparent"
         android:gravity="top|start"
         android:hint="@string/notes_hint"
+        android:imeOptions="flagNoExtractUi"
         android:importantForAutofill="no"
         android:importantForContentCapture="no"
         android:inputType="textMultiLine|textCapSentences"
