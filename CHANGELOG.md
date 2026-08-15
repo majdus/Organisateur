@@ -4,6 +4,46 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
+## [2.6.1] — 2026-08-15
+
+### Corrigé
+- **La frappe est redevenue fluide dans une note volumineuse.** Sur une note de 37 000 caractères
+  entièrement en gras, chaque lettre tapée faisait remettre en page tout le texte suivant le
+  curseur : 105 ms de retard et près de cinq mégaoctets alloués par frappe, donc une ramasse-miettes
+  à chaque touche. La mise en forme qui vaut pour toute la note est désormais portée par le champ
+  de saisie lui-même et non par un span, ce qui la rend gratuite. Mesuré après correction : 0,7 ms
+  d'attente et 1 ms de dessin par image, contre 105 et 72 auparavant.
+- **Une note dont les sauts de ligne avaient perdu le gras retrouve un contenu d'un seul tenant.**
+  Un saut de ligne n'a pas de dessin, gras ou non n'y change rien — rien ne se voyait — mais il
+  perd sa mise en forme au moindre remaniement du texte autour de lui, et chacun de ces accidents
+  coupait la note en deux morceaux de plus. Une note s'était ainsi retrouvée en 1 759 tronçons pour
+  108 Ko là où un seul de 39 Ko suffisait. Elle se remet d'aplomb à sa prochaine ouverture.
+- **La barre de mise en forme suit enfin le curseur.** Sélectionner un passage en gras allume le
+  bouton B, et une seule pression suffit désormais pour l'enlever — il en fallait deux, la première
+  ajoutant du gras là où il y en avait déjà. Même chose pour l'italique et les couleurs.
+- En paysage, le clavier passait en plein écran et recopiait le texte entier vers son propre
+  processus à chaque frappe.
+
+### Notes techniques
+- La cause tient à deux mécanismes du cadre applicatif qui se combinent mal : insérer un caractère
+  décale la position de tous les spans situés après le curseur et `SpannableStringBuilder` annonce
+  un changement pour chacun ; or `StyleSpan` et `ForegroundColorSpan` descendent de
+  `MetricAffectingSpan`, qui implémente `UpdateLayout`, si bien que `DynamicLayout` remet en page
+  toute l'étendue de chaque span concerné, deux fois. La quantité de texte recalculée est donc la
+  même quel que soit le découpage : un seul span coûtait 105 ms par frappe, dix-neuf en coûtaient
+  322, mille quatre cent quarante-quatre en coûtaient 4 648. Découper la mise en forme a été
+  essayé, mesuré, puis retiré.
+- Un passage fait de seuls sauts de ligne ne départage plus les tronçons : il suit ce qui l'entoure.
+  La règle vaut à l'écriture comme à la lecture, de sorte qu'une note déjà émiettée en base se
+  répare à l'ouverture sans attendre un enregistrement. La relecture refusionne également les
+  tronçons voisins de même mise en forme au lieu de faire confiance à ce qu'elle reçoit.
+- La recherche des frontières de mise en forme ne porte plus que sur les deux types réellement
+  enregistrés : elle trébuchait aussi sur les spans du correcteur orthographique, qui en sème un
+  par mot douteux.
+- L'état de la barre est relu sous le curseur à chaque déplacement de la sélection. Comme cela
+  s'exécute aussi souvent que la saisie — et qu'effacer en maintenant la touche va bien plus vite
+  que taper — la relecture ne touche à aucune vue tant que l'état n'a pas changé.
+
 ## [2.6.0] — 2026-08-15
 
 ### Ajouté
