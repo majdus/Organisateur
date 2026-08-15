@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/surface_card">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingBottom="20dp">
+
+        <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/recurrence_title"
+            android:textAppearance="@style/TextAppearance.Organisateur.SheetTitle" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/frequencyGroup"
+            style="@style/Widget.Organisateur.Segments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNever"
+                style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                android:text="@string/recurrence_never" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDaily"
+                style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                android:text="@string/recurrence_freq_day" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnWeekly"
+                style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                android:text="@string/recurrence_freq_week" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMonthly"
+                style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                android:text="@string/recurrence_freq_month" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnYearly"
+                style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                android:text="@string/recurrence_freq_year" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Tout ce qui suit n'a de sens qu'une fois une fréquence choisie. -->
+        <LinearLayout
+            android:id="@+id/detailsBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/recurrence_interval_prefix"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Organisateur.TextInput"
+                    android:layout_width="84dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    app:boxStrokeColor="@color/accent_calendar">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/intervalInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:inputType="number"
+                        android:maxLength="3"
+                        android:maxLines="1"
+                        android:textColor="@color/text_primary"
+                        tools:text="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/intervalUnit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    tools:text="semaines" />
+            </LinearLayout>
+
+            <!-- Rempli par le code: une puce par jour, la semaine commençant le lundi. -->
+            <LinearLayout
+                android:id="@+id/weekDaysRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/monthlyGroup"
+                style="@style/Widget.Organisateur.Segments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMonthDay"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    tools:text="Le 13" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMonthWeekday"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    tools:text="Le 2e jeudi" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/recurrence_end"
+                android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/endGroup"
+                style="@style/Widget.Organisateur.Segments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEndNever"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    android:text="@string/recurrence_end_never" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEndDate"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    android:text="@string/recurrence_end_date" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEndCount"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    android:text="@string/recurrence_end_count" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/endDateButton"
+                style="@style/Widget.Organisateur.Button.Text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/accent_calendar"
+                android:visibility="gone"
+                app:rippleColor="@color/accent_calendar"
+                tools:text="31 décembre 2026"
+                tools:visibility="visible" />
+
+            <LinearLayout
+                android:id="@+id/endCountRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Organisateur.TextInput"
+                    android:layout_width="84dp"
+                    android:layout_height="wrap_content"
+                    app:boxStrokeColor="@color/accent_calendar">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/countInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:inputType="number"
+                        android:maxLength="3"
+                        android:maxLines="1"
+                        android:textColor="@color/text_primary"
+                        tools:text="10" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="@string/recurrence_count_suffix"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancel"
+                style="@style/Widget.Organisateur.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:text="@string/cancel" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                style="@style/Widget.Organisateur.Button.Primary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="24dp"
+                android:text="@string/action_save"
+                app:backgroundTint="@color/accent_calendar" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

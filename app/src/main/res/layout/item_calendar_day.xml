@@ -8,12 +8,12 @@
     android:focusable="true"
     android:gravity="center"
     android:orientation="vertical"
-    android:paddingVertical="2dp">
+    android:paddingVertical="1dp">
 
     <TextView
         android:id="@+id/day"
-        android:layout_width="34dp"
-        android:layout_height="34dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:gravity="center"
         android:includeFontPadding="false"
         android:textColor="@color/text_primary"
@@ -34,11 +34,37 @@
         tools:text="5/08"
         tools:visibility="visible" />
 
-    <View
-        android:id="@+id/dot"
-        android:layout_width="5dp"
+    <!-- Jusqu'à trois pastilles, aux couleurs des événements du jour: sur une grille compacte,
+         c'est ce qui distingue une journée de travail d'une journée personnelle sans avoir à
+         l'ouvrir. Le détail se lit dans la liste, juste en dessous. -->
+    <LinearLayout
+        android:id="@+id/dots"
+        android:layout_width="wrap_content"
         android:layout_height="5dp"
-        android:layout_marginTop="3dp"
-        android:background="@drawable/bg_accent_circle"
-        android:backgroundTint="@color/accent_calendar" />
+        android:layout_marginTop="2dp"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/dot"
+            android:layout_width="5dp"
+            android:layout_height="5dp"
+            android:background="@drawable/bg_accent_circle"
+            android:backgroundTint="@color/accent_calendar" />
+
+        <View
+            android:id="@+id/dot2"
+            android:layout_width="5dp"
+            android:layout_height="5dp"
+            android:layout_marginStart="2dp"
+            android:background="@drawable/bg_accent_circle"
+            android:backgroundTint="@color/accent_calendar" />
+
+        <View
+            android:id="@+id/dot3"
+            android:layout_width="5dp"
+            android:layout_height="5dp"
+            android:layout_marginStart="2dp"
+            android:background="@drawable/bg_accent_circle"
+            android:backgroundTint="@color/accent_calendar" />
+    </LinearLayout>
 </LinearLayout>

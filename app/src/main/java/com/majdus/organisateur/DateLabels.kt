@@ -7,7 +7,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Libellés de dates partagés par les écrans Tâches et Calendrier: "aujourd'hui", "hier",
+ * Libellés de dates partagés par les écrans Tâches et Agenda: "aujourd'hui", "hier",
  * ou "le 3 août" au-delà. Une date proche se lit mieux relativement qu'en chiffres.
  */
 object DateLabels {
@@ -17,6 +17,7 @@ object DateLabels {
     private val weekdayDayMonth = SimpleDateFormat("EEEE d MMMM", Locale.FRANCE)
     private val monthYear = SimpleDateFormat("LLLL yyyy", Locale.FRANCE)
     private val storageKey = SimpleDateFormat("yyyy-MM-dd", Locale.FRANCE)
+    private val hourMinute = SimpleDateFormat("HH:mm", Locale.FRANCE)
 
     /** "aujourd'hui", "hier", "demain", sinon "le 3 août" (avec l'année si elle diffère). */
     fun relativeDay(context: Context, timestamp: Long, now: Long = System.currentTimeMillis()): String =
@@ -44,8 +45,11 @@ object DateLabels {
     fun month(timestamp: Long): String = monthYear.format(Date(timestamp))
         .replaceFirstChar { it.titlecase(Locale.FRANCE) }
 
-    /** Clé de stockage d'une journée, format partagé avec la base ("yyyy-MM-dd"). */
+    /** Clé désignant une journée, format partagé par les écrans ("yyyy-MM-dd"). */
     fun key(timestamp: Long): String = storageKey.format(Date(timestamp))
+
+    /** "09:05" — heure d'un événement, dans le fuseau de l'appareil. */
+    fun time(timestamp: Long): String = hourMinute.format(Date(timestamp))
 
     fun isToday(timestamp: Long, now: Long = System.currentTimeMillis()): Boolean =
         daysBetween(timestamp, now) == 0L

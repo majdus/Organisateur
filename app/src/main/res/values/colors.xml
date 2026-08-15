@@ -72,4 +72,16 @@
     <color name="note_blue">#DBEAFE</color>
     <color name="note_pink">#FCE7F3</color>
     <color name="note_purple">#F3E8FF</color>
+
+    <!-- Couleurs d'événement. Saturées, contrairement aux notes: elles servent de bande et de
+         pastille sur fond clair, pas de fond de carte. -->
+    <color name="event_default">#F59E0B</color>
+    <color name="event_red">#EF4444</color>
+    <color name="event_orange">#F97316</color>
+    <color name="event_green">#10B981</color>
+    <color name="event_blue">#3B82F6</color>
+    <color name="event_indigo">#6366F1</color>
+    <color name="event_purple">#8B5CF6</color>
+    <color name="event_pink">#EC4899</color>
+    <color name="event_grey">#64748B</color>
 </resources>

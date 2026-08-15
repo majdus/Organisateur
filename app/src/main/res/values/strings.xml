@@ -25,7 +25,7 @@
     <string name="subtitle_notes">Idées et listes</string>
     <string name="title_alarms">Rappels</string>
     <string name="subtitle_alarms">Ne rien oublier</string>
-    <string name="title_calendar">Calendrier</string>
+    <string name="title_calendar">Agenda</string>
     <string name="subtitle_calendar">Vos événements</string>
 
     <string name="home_tasks_none">Rien à faire</string>
@@ -79,8 +79,8 @@
     <string name="task_settings_check_strike">Barrée</string>
     <string name="task_settings_check_delete">Supprimée</string>
 
-    <!-- ===== Calendrier ===== -->
-    <string name="calendar_title">Calendrier</string>
+    <!-- ===== Agenda ===== -->
+    <string name="calendar_title">Agenda</string>
     <string name="calendar_add">Nouvel événement</string>
     <string name="calendar_previous_month">Mois précédent</string>
     <string name="calendar_next_month">Mois suivant</string>
@@ -136,8 +136,93 @@
     <string name="event_created">Événement ajouté à %1$s</string>
     <string name="event_updated">Événement mis à jour</string>
     <string name="event_deleted">Événement supprimé</string>
+    <string name="event_channel_name">Événements du calendrier</string>
     <string name="event_notification_on">Notification programmée</string>
     <string name="event_notification_text">Événement de %1$s</string>
+
+    <!-- Agenda -->
+    <string name="agenda_title">Agenda</string>
+    <string name="agenda_view_day">Jour</string>
+    <string name="agenda_view_week">Semaine</string>
+    <string name="agenda_view_month">Mois</string>
+    <string name="agenda_view_schedule">Planning</string>
+    <string name="agenda_range">%1$s – %2$s</string>
+    <string name="agenda_all_day_short">Journée</string>
+    <string name="agenda_schedule_empty">Rien de prévu dans les trois prochains mois.</string>
+    <string name="agenda_search">Rechercher</string>
+    <string name="agenda_search_hint">Intitulé, lieu ou notes</string>
+    <string name="agenda_search_empty">Aucun événement ne correspond.</string>
+
+    <!-- Éditeur complet -->
+    <string name="event_all_day">Journée entière</string>
+    <string name="event_start">Début</string>
+    <string name="event_end">Fin</string>
+    <string name="event_location_hint">Lieu</string>
+    <string name="event_description_hint">Notes</string>
+    <string name="event_color">Couleur</string>
+    <string name="event_repeat">Répétition</string>
+    <string name="event_reminders">Rappels</string>
+    <string name="event_add_reminder">Ajouter</string>
+    <string name="event_remove_reminder">Retirer ce rappel</string>
+    <string name="event_no_reminder">Aucun</string>
+    <string name="event_end_before_start">La fin doit suivre le début</string>
+    <string name="event_date_picker_title">Date de l\'événement</string>
+
+    <string name="event_color_default">Ambre</string>
+    <string name="event_color_red">Rouge</string>
+    <string name="event_color_orange">Orange</string>
+    <string name="event_color_green">Vert</string>
+    <string name="event_color_blue">Bleu</string>
+    <string name="event_color_indigo">Indigo</string>
+    <string name="event_color_purple">Violet</string>
+    <string name="event_color_pink">Rose</string>
+    <string name="event_color_grey">Gris</string>
+
+    <!-- Rappels -->
+    <string name="reminder_at_start">À l\'heure dite</string>
+    <string name="reminder_minutes">%1$d min avant</string>
+    <string name="reminder_hours">%1$d h avant</string>
+    <string name="reminder_days">%1$d j avant</string>
+
+    <!-- Répétition -->
+    <string name="recurrence_title">Répétition</string>
+    <string name="recurrence_never">Jamais</string>
+    <string name="recurrence_freq_day">Jour</string>
+    <string name="recurrence_freq_week">Semaine</string>
+    <string name="recurrence_freq_month">Mois</string>
+    <string name="recurrence_freq_year">Année</string>
+    <string name="recurrence_interval_prefix">Tous les</string>
+    <string name="recurrence_unit_day">jours</string>
+    <string name="recurrence_unit_week">semaines</string>
+    <string name="recurrence_unit_month">mois</string>
+    <string name="recurrence_unit_year">ans</string>
+    <string name="recurrence_end">Fin</string>
+    <string name="recurrence_end_never">Jamais</string>
+    <string name="recurrence_end_date">Le</string>
+    <string name="recurrence_end_count">Après</string>
+    <string name="recurrence_count_suffix">occurrences</string>
+    <string name="recurrence_monthly_by_month_day">Le %1$d</string>
+    <string name="recurrence_monthly_by_weekday">Le %1$s</string>
+    <string name="recurrence_weekday_position_last">dernier</string>
+    <string name="recurrence_weekday_position">%1$de</string>
+    <string name="recurrence_summary_daily">Tous les jours</string>
+    <string name="recurrence_summary_weekly">Toutes les semaines</string>
+    <string name="recurrence_summary_monthly">Tous les mois</string>
+    <string name="recurrence_summary_yearly">Tous les ans</string>
+    <string name="recurrence_summary_every_days">Tous les %1$d jours</string>
+    <string name="recurrence_summary_every_weeks">Toutes les %1$d semaines</string>
+    <string name="recurrence_summary_every_months">Tous les %1$d mois</string>
+    <string name="recurrence_summary_every_years">Tous les %1$d ans</string>
+    <string name="recurrence_summary_days">%1$s, %2$s</string>
+    <string name="recurrence_summary_until">%1$s, jusqu\'au %2$s</string>
+    <string name="recurrence_summary_count">%1$s, %2$d fois</string>
+
+    <!-- Portée d'une modification de série -->
+    <string name="edit_scope_edit_title">Modifier</string>
+    <string name="edit_scope_delete_title">Supprimer</string>
+    <string name="edit_scope_this">Cette occurrence</string>
+    <string name="edit_scope_following">Cette occurrence et les suivantes</string>
+    <string name="edit_scope_all">Toute la série</string>
 
     <!-- ===== Notes ===== -->
     <string name="notes_title">Notes</string>

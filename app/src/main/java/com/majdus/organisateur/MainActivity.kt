@@ -17,12 +17,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.majdus.organisateur.data.AppDatabase
+import com.majdus.organisateur.data.EventRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 /**
@@ -33,6 +33,10 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private val db by lazy { AppDatabase.getDatabase(this) }
+
+    // Le compteur passe par le dépôt et non par le DAO: une série ne compte qu'une ligne en base
+    // mais peut avoir une occurrence aujourd'hui, ce que seule l'expansion sait dire.
+    private val events by lazy { EventRepository(db) }
 
     private lateinit var tilesView: RecyclerView
     private lateinit var greetingView: TextView
@@ -59,6 +63,13 @@ class MainActivity : AppCompatActivity() {
 
         renderHeader()
         askForPermissions()
+
+        // L'agenda ne pose qu'une alarme, réarmée en cascade. Un arrêt forcé de l'application la
+        // perd sans que rien ne la remette: l'accueil étant le point d'entrée, c'est ici qu'elle
+        // se rattrape le plus tôt.
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { EventAlarmScheduler.rearm(applicationContext) }
+        }
     }
 
     override fun onResume() {
@@ -96,12 +107,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun loadCounts(): Counts {
-        val today = DATE_KEY_FORMAT.format(Date())
+        val (dayStart, dayEnd) = EventTimes.dayRange(System.currentTimeMillis())
         return Counts(
             pendingTasks = db.taskDao().countPending(),
             notes = db.noteDao().countNotes(),
             activeAlarms = AlarmRepository(this).load().count { it.enabled },
-            todayEvents = db.eventDao().countByDate(today)
+            todayEvents = events.countIn(dayStart, dayEnd)
         )
     }
 
@@ -175,7 +186,7 @@ class MainActivity : AppCompatActivity() {
             HomeAdapter.TASKS -> TaskList::class.java
             HomeAdapter.NOTES -> Notes::class.java
             HomeAdapter.ALARMS -> Alarms::class.java
-            else -> Calendrier::class.java
+            else -> Agenda::class.java
         }
         startActivity(Intent(this, target))
     }
@@ -214,6 +225,5 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "organisateur"
         private const val KEY_EXACT_ALARM_ASKED = "exact_alarm_asked"
         private val DAY_FORMAT = SimpleDateFormat("EEEE d MMMM", Locale.FRANCE)
-        private val DATE_KEY_FORMAT = SimpleDateFormat("yyyy-MM-dd", Locale.FRANCE)
     }
 }

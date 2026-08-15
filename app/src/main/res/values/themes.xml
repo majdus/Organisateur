@@ -180,6 +180,16 @@
         <item name="selectionRequired">true</item>
     </style>
 
+    <!-- Variante ambre, pour les réglages de l'agenda. Le texte est un cran plus petit: la
+         rangée des fréquences porte cinq segments là où les autres en portent deux ou trois. -->
+    <style name="Widget.Organisateur.Segments.Button.Calendar">
+        <item name="backgroundTint">@color/segment_calendar_background</item>
+        <item name="android:textColor">@color/segment_calendar_text</item>
+        <item name="rippleColor">@color/accent_calendar_soft</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:paddingHorizontal">4dp</item>
+    </style>
+
     <style name="Widget.Organisateur.Segments.Button" parent="Widget.Material3.Button.OutlinedButton">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>

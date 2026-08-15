@@ -25,8 +25,8 @@ android {
         // Aligné sur le tag Git. versionCode dérivé du nom de version
         // (majeure * 10000 + mineure * 100 + correctif), afin qu'il reste croissant
         // et lisible: 2.1.0 -> 20100.
-        versionCode 20501
-        versionName "2.5.1"
+        versionCode 20600
+        versionName "2.6.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -61,6 +61,12 @@ android {
     buildToolsVersion '36.0.0'
 }
 
+// Le schéma Room est exporté et versionné depuis la version 8: c'est la référence qui permet
+// d'écrire les migrations suivantes et de voir en revue ce qu'une évolution change vraiment.
+ksp {
+    arg('room.schemaLocation', "$projectDir/schemas")
+}
+
 dependencies {
     implementation 'androidx.core:core-ktx:1.15.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
@@ -69,6 +75,13 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    // Le balayage d'une période à l'autre, avec le recyclage des pages: c'est ce qui évite
+    // d'avoir à réécrire un défilement horizontal à la main dans les grilles de l'agenda.
+    //
+    // Volontairement en 1.0.0, la version que Material 1.12 amène déjà: l'ajouter ne coûte donc
+    // rien. La 1.1.0 tire une cascade de mises à jour d'AndroidX qui gonfle l'APK de 11 Mo, pour
+    // des correctifs dont rien ici ne dépend.
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
     
     // Room
     def room_version = "2.7.1"

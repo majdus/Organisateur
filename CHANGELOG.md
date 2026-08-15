@@ -4,6 +4,67 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
+## [2.6.0] — 2026-08-15
+
+### Ajouté
+- **Un véritable agenda remplace l'écran Calendrier.** La même donnée s'y lit sous trois
+  découpages — jour, semaine, mois — auxquels s'ajoute un planning continu qui répond à
+  « qu'est-ce qui vient ensuite » sans imposer de choisir une période : les journées vides en sont
+  simplement absentes. Le découpage choisi se retient d'une session à l'autre.
+- **Un événement a maintenant un horaire, une durée et une place.** Début et fin, journée entière,
+  description, lieu et couleur de palette. Les événements qui se chevauchent se répartissent en
+  colonnes côte à côte dans les vues jour et semaine, comme dans n'importe quel agenda.
+- **Répétitions.** Tous les jours, toutes les semaines, tous les mois ou tous les ans, avec un
+  intervalle, un choix de jours pour les répétitions hebdomadaires, et deux motifs mensuels — « le
+  13 » ou « le 2ᵉ jeudi », qui tombent sur la même date le mois où on les choisit et divergent
+  ensuite. La série se termine à une date, après un nombre d'occurrences, ou jamais. Un résumé en
+  une ligne — « Toutes les 2 semaines, lundi, mercredi » — se lit sans ouvrir le sélecteur.
+- **Rappels**, de l'heure dite jusqu'à deux jours avant, plusieurs par événement.
+- **Modifier une occurrence d'une série demande sa portée** : cette occurrence, les suivantes, ou
+  toute la série. La question n'est posée que lorsqu'elle se pose — un événement unique n'a qu'une
+  portée possible.
+- **Recherche dans l'agenda.** Passé les quelques semaines qu'on parcourt à la main, retrouver un
+  rendez-vous demandait de savoir déjà quand il avait eu lieu. Les résultats sont des occurrences
+  et non des lignes : une série trouvée rend ses dates.
+
+### Modifié
+- La tuile d'accueil compte les occurrences du jour et non les lignes en base : une série n'occupe
+  qu'une ligne mais peut avoir un rendez-vous aujourd'hui.
+
+### Notes techniques
+- **Le stockage passe des dates texte aux instants.** Une clé `yyyy-MM-dd` ne sait rien dire d'un
+  événement à cheval sur deux jours, ni d'une série dont la seule ligne porte la date de sa
+  *première* occurrence. Le prédicat de lecture est donc partout le chevauchement
+  (`startUtc < finDePlage AND seriesEndUtc > débutDePlage`), jamais un `BETWEEN` sur le début.
+  `seriesEndUtc` est dérivé de la règle, donc redondant, mais c'est lui qui permet à SQLite
+  d'écarter une série hors plage sans avoir à la déplier.
+- **Deux ancrages cohabitent, délibérément** : un événement à l'heure porte un instant absolu, une
+  journée entière porte minuit UTC de sa date et n'est jamais convertie — « le 14 août » doit
+  rester le 14 août où que l'on ouvre l'application. C'est la convention de `CalendarContract` et
+  d'iCalendar.
+- **Le dépliage d'une série calcule en heure murale locale**, la conversion en instant n'ayant lieu
+  qu'à la toute fin : « tous les jours à 9 h » ajoute un jour civil et non 86 400 000
+  millisecondes, faute de quoi le rendez-vous glisserait à 8 h la nuit du changement d'heure.
+  Le fuseau est toujours passé en paramètre, jamais lu depuis la machine : une expansion est donc
+  reproductible et vérifiable hors d'Android.
+- **Une seule alarme est vivante à la fois**, réarmée après chaque déclenchement. Poser une alarme
+  par rappel serait impossible : une série sans terme a une infinité d'occurrences, et Android
+  plafonne les alarmes exactes à 500 par application depuis l'API 34. Le prochain rappel est
+  cherché dans une fenêtre glissante de sept jours, avec une alarme de garde quand elle est vide.
+  Le nombre d'alarmes devient ainsi indépendant des données.
+- Les grilles peignent leurs lignes d'heures et de jours dans `onDraw` plutôt que de les composer
+  en vues : vingt-quatre lignes sur sept colonnes feraient cent soixante-huit vues à mesurer et
+  poser à chaque défilement, pour des traits d'un pixel. Les blocs restent de vraies vues, donc
+  tapotables et lisibles par un lecteur d'écran.
+- La migration reprend les événements existants sans finesse, c'est assumé : aucun ne portait de
+  durée, donc il n'y a rien à reconstituer. Chacun devient un événement simple d'une heure, borné
+  au jour même.
+- Le schéma Room est désormais exporté et versionné (`app/schemas/`) : c'est la référence qui
+  permet d'écrire les migrations suivantes et de voir en revue ce qu'une évolution change.
+- Soixante et un tests unitaires couvrent le cœur, sans appareil : expansion des récurrences,
+  analyse et rendu des RRULE, scission d'une série, répartition des chevauchements, bornes
+  d'occurrence.
+
 ## [2.5.1] — 2026-08-13
 
 ### Corrigé

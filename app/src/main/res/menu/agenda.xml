@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Un seul chemin pour revenir au jour même, quel que soit le découpage affiché. -->
+    <item
+        android:id="@+id/action_today"
+        android:title="@string/calendar_today"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search"
+        android:title="@string/agenda_search"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_calendar_system"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/calendar_system_action"
+        app:showAsAction="always" />
+</menu>

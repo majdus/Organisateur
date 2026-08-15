@@ -14,8 +14,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Organisateur">
         <activity
-            android:label="Calendrier"
-            android:name=".Calendrier"
+            android:label="@string/agenda_title"
+            android:name=".Agenda"
             android:exported="false" />
         <activity
             android:label="@string/alarms_title"
@@ -56,6 +56,11 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Un rappel se calcule depuis une heure locale: changer de fuseau ou régler
+                     l'horloge change l'instant auquel il doit partir. -->
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
     </application>

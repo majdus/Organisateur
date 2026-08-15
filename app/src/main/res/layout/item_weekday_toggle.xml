@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Une puce de jour du sélecteur hebdomadaire. Même vocabulaire visuel que les cases de la
+     grille du mois: un disque ambre quand le jour est retenu. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/dayToggle"
+    android:layout_width="0dp"
+    android:layout_height="40dp"
+    android:layout_weight="1"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center"
+    android:textSize="14sp"
+    tools:text="L" />
