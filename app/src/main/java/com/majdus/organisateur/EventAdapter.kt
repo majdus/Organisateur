@@ -8,13 +8,20 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
-import com.majdus.organisateur.data.Event
-import java.util.Locale
+import com.majdus.organisateur.agenda.Occurrence
+
+/**
+ * Une ligne de l'agenda: l'occurrence et ce que la liste doit en dire.
+ *
+ * Les rappels vivent dans leur propre table, donc l'occurrence seule ne suffit pas à savoir s'il
+ * faut afficher la puce de notification.
+ */
+data class EventRow(val occurrence: Occurrence, val hasReminder: Boolean)
 
 /** Liste des événements du jour sélectionné. */
 class EventAdapter(
-    private val onClick: (Event) -> Unit
-) : ListAdapter<Event, EventAdapter.EventViewHolder>(DIFF_CALLBACK) {
+    private val onClick: (EventRow) -> Unit
+) : ListAdapter<EventRow, EventAdapter.EventViewHolder>(DIFF_CALLBACK) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_event, parent, false)
@@ -31,37 +38,38 @@ class EventAdapter(
         private val time: TextView = view.findViewById(R.id.timeLabel)
         private val notificationChip: View = view.findViewById(R.id.notificationChip)
 
-        fun bind(event: Event, onClick: (Event) -> Unit) {
-            val timeText = String.format(Locale.FRANCE, "%02d:%02d", event.hour, event.minute)
+        fun bind(row: EventRow, onClick: (EventRow) -> Unit) {
+            val occurrence = row.occurrence
+            val timeText = DateLabels.time(occurrence.startUtc)
             time.text = timeText
-            label.text = event.title
-            notificationChip.visibility = if (event.hasNotification) View.VISIBLE else View.GONE
+            label.text = occurrence.title
+            notificationChip.visibility = if (row.hasReminder) View.VISIBLE else View.GONE
 
             // Un événement déjà passé reste consultable, mais s'efface derrière ceux à venir.
-            val isPast = EventTimes.at(event) <= System.currentTimeMillis()
+            val isPast = occurrence.startUtc <= System.currentTimeMillis()
             val contentAlpha = if (isPast) 0.5f else 1f
             time.alpha = contentAlpha
             label.alpha = contentAlpha
             notificationChip.alpha = contentAlpha
 
-            card.setOnClickListener { onClick(event) }
+            card.setOnClickListener { onClick(row) }
             card.contentDescription = itemView.context.getString(
-                R.string.event_item_description, event.title, timeText
+                R.string.event_item_description, occurrence.title, timeText
             )
         }
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Event>() {
-            override fun areItemsTheSame(oldItem: Event, newItem: Event): Boolean =
-                oldItem.id == newItem.id
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<EventRow>() {
+            // Une occurrence s'identifie par sa série *et* sa date: deux occurrences d'une même
+            // série partagent leur identifiant d'événement.
+            override fun areItemsTheSame(oldItem: EventRow, newItem: EventRow): Boolean =
+                oldItem.occurrence.eventId == newItem.occurrence.eventId &&
+                        oldItem.occurrence.occurrenceStartUtc == newItem.occurrence.occurrenceStartUtc
 
-            override fun areContentsTheSame(oldItem: Event, newItem: Event): Boolean =
-                oldItem.title == newItem.title &&
-                        oldItem.date == newItem.date &&
-                        oldItem.hour == newItem.hour &&
-                        oldItem.minute == newItem.minute &&
-                        oldItem.hasNotification == newItem.hasNotification
+            override fun areContentsTheSame(oldItem: EventRow, newItem: EventRow): Boolean =
+                oldItem.occurrence == newItem.occurrence &&
+                        oldItem.hasReminder == newItem.hasReminder
         }
     }
 }

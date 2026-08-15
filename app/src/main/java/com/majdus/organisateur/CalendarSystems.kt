@@ -9,7 +9,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Système calendaire retenu pour l'écran Calendrier.
+ * Système calendaire retenu pour l'écran Agenda.
  *
  * [key] est stable et stockée telle quelle: le libellé peut être réécrit sans toucher aux
  * préférences déjà enregistrées.
@@ -21,7 +21,7 @@ enum class CalendarSystem(val key: String, @StringRes val labelRes: Int) {
 
 /**
  * Tout ce qui dépend du système calendaire, rassemblé ici pour que ni [MonthCalendarView] ni
- * [Calendrier] n'aient à en connaître les détails.
+ * [Agenda] n'aient à en connaître les détails.
  *
  * Le choix ne touche que l'affichage. Un événement reste rangé sous une clé grégorienne
  * "yyyy-MM-dd" (`Event.date`), comparée lexicographiquement par le DAO: convertir le stockage

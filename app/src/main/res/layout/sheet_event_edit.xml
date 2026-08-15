@@ -25,47 +25,6 @@
             android:text="@string/event_new_title"
             android:textAppearance="@style/TextAppearance.Organisateur.SheetTitle" />
 
-        <TextView
-            android:id="@+id/sheetDate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textAppearance="@style/TextAppearance.Organisateur.Summary"
-            tools:text="Mardi 4 août" />
-
-        <LinearLayout
-            android:id="@+id/timeField"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/bg_time_field"
-            android:backgroundTint="@color/accent_calendar_soft"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:paddingVertical="22dp">
-
-            <TextView
-                android:id="@+id/textTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-light"
-                android:includeFontPadding="false"
-                android:letterSpacing="-0.03"
-                android:textColor="@color/text_primary"
-                android:textSize="56sp"
-                tools:text="14:30" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/event_sheet_hint"
-                android:textColor="@color/accent_calendar"
-                android:textSize="13sp" />
-        </LinearLayout>
-
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/labelInputLayout"
             style="@style/Widget.Organisateur.TextInput"
@@ -80,18 +39,179 @@
                 android:id="@+id/eventLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:imeOptions="actionDone"
+                android:imeOptions="actionNext"
                 android:inputType="textCapSentences"
                 android:maxLength="80"
                 android:maxLines="1"
                 android:textColor="@color/text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Journée entière avant les heures: cocher la case fait disparaître ce qu'elle rend
+             sans objet, plutôt que de laisser deux réglages se contredire. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/event_all_day"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/allDaySwitch"
+                style="@style/Widget.Organisateur.Switch.Calendar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/event_start"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/startDateButton"
+                style="@style/Widget.Organisateur.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                app:rippleColor="@color/accent_calendar"
+                tools:text="jeu. 13 août" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/startTimeButton"
+                style="@style/Widget.Organisateur.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/accent_calendar"
+                app:rippleColor="@color/accent_calendar"
+                tools:text="09:00" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/event_end"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/endDateButton"
+                style="@style/Widget.Organisateur.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                app:rippleColor="@color/accent_calendar"
+                tools:text="jeu. 13 août" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/endTimeButton"
+                style="@style/Widget.Organisateur.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/accent_calendar"
+                app:rippleColor="@color/accent_calendar"
+                tools:text="10:00" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textEndError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/event_end_before_start"
+            android:textColor="@color/danger"
+            android:textSize="13sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Organisateur.TextInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="@string/event_location_hint"
+            app:boxStrokeColor="@color/accent_calendar"
+            app:hintTextColor="@color/accent_calendar"
+            app:startIconDrawable="@drawable/ic_place"
+            app:startIconTint="@color/text_tertiary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/eventLocation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionNext"
+                android:inputType="textCapSentences"
+                android:maxLength="120"
+                android:maxLines="1"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Organisateur.TextInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="@string/event_description_hint"
+            app:boxStrokeColor="@color/accent_calendar"
+            app:hintTextColor="@color/accent_calendar"
+            app:startIconDrawable="@drawable/ic_notes"
+            app:startIconTint="@color/text_tertiary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/eventDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences|textMultiLine"
+                android:maxLines="4"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/event_color"
+            android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle" />
+
+        <!-- Rempli par le code, une pastille par teinte de la palette. -->
+        <LinearLayout
+            android:id="@+id/colorRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/repeatRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:background="@drawable/bg_next_trigger_chip"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="16dp"
@@ -101,37 +221,75 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_notifications"
+                android:src="@drawable/ic_repeat"
                 app:tint="@color/accent_calendar" />
 
-            <LinearLayout
+            <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:text="@string/event_repeat"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/event_notification_title"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/event_notification_subtitle"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/notificationSwitch"
-                style="@style/Widget.Organisateur.Switch.Calendar"
+            <TextView
+                android:id="@+id/repeatSummary"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                tools:text="Toutes les semaines" />
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="@color/text_tertiary" />
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/event_reminders"
+                android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddReminder"
+                style="@style/Widget.Organisateur.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/event_add_reminder"
+                android:textColor="@color/accent_calendar"
+                app:rippleColor="@color/accent_calendar" />
+        </LinearLayout>
+
+        <!-- Rempli par le code: une ligne par rappel, avec sa croix. -->
+        <LinearLayout
+            android:id="@+id/remindersRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/textNoReminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/event_no_reminder"
+            android:textColor="@color/text_tertiary"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/textPastWarning"

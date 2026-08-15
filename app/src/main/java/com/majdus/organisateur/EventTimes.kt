@@ -1,39 +1,63 @@
 package com.majdus.organisateur
 
-import com.majdus.organisateur.data.Event
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import com.majdus.organisateur.agenda.Zones
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 /**
- * Conversion entre la date d'un événement (stockée en "yyyy-MM-dd") et un instant.
- * Un seul endroit connaît le format: la feuille d'édition, la liste et le planificateur
- * calculent forcément la même heure de déclenchement.
+ * Pont entre la clé de journée affichée par l'écran ("yyyy-MM-dd") et les instants du stockage.
+ *
+ * La clé n'est plus un format de base — les événements portent des instants — mais elle reste la
+ * façon la plus simple de désigner la journée qu'on regarde. Un seul endroit sait la lire, donc
+ * la grille du mois, la feuille d'édition et le planificateur tombent forcément sur les mêmes
+ * bornes.
  */
 object EventTimes {
 
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.FRANCE)
+    private val dateFormat = DateTimeFormatter.ISO_LOCAL_DATE
 
-    /** Minuit du jour de l'événement; l'instant courant si la date est illisible. */
-    fun dayStart(date: String): Long = parse(date)?.timeInMillis ?: System.currentTimeMillis()
+    /** Durée d'un événement dont on ne connaît que l'heure de début. */
+    const val DEFAULT_DURATION_MS = 3_600_000L
 
+    /** Minuit du jour désigné; l'instant courant si la clé est illisible. */
+    fun dayStart(date: String): Long {
+        val day = parse(date) ?: return System.currentTimeMillis()
+        return Zones.dayStart(day, Zones.current())
+    }
+
+    /** Bornes `[début, fin)` de la journée désignée; celles du jour même si la clé est illisible. */
+    fun dayRange(date: String): Pair<Long, Long> {
+        val zone = Zones.current()
+        val day = parse(date) ?: LocalDate.now(zone)
+        return Zones.dayStart(day, zone) to Zones.dayEnd(day, zone)
+    }
+
+    /** Bornes `[début, fin)` de la journée contenant [timestamp]. */
+    fun dayRange(timestamp: Long): Pair<Long, Long> {
+        val zone = Zones.current()
+        val day = Zones.localDate(timestamp, zone)
+        return Zones.dayStart(day, zone) to Zones.dayEnd(day, zone)
+    }
+
+    /** Instant de [date] à [hour]:[minute]; l'instant courant si la clé est illisible. */
     fun at(date: String, hour: Int, minute: Int): Long {
-        val calendar = parse(date) ?: return System.currentTimeMillis()
-        calendar.set(Calendar.HOUR_OF_DAY, hour)
-        calendar.set(Calendar.MINUTE, minute)
-        return calendar.timeInMillis
+        val day = parse(date) ?: return System.currentTimeMillis()
+        return Zones.toUtc(day.atTime(LocalTime.of(hour, minute)), Zones.current())
     }
 
-    fun at(event: Event): Long = at(event.date, event.hour, event.minute)
-
-    private fun parse(date: String): Calendar? {
-        val parsed = runCatching { dateFormat.parse(date) }.getOrNull() ?: return null
-        return Calendar.getInstance().apply {
-            time = parsed
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
+    /**
+     * Fin d'un événement commencé à [startUtc], sans jamais déborder sur le lendemain.
+     *
+     * Une durée par défaut qui dépasse minuit ferait apparaître un rendez-vous de fin de soirée
+     * sur deux journées, ce que personne n'a demandé en le saisissant.
+     */
+    fun defaultEnd(startUtc: Long): Long {
+        val zone = Zones.current()
+        val dayEnd = Zones.dayEnd(Zones.localDate(startUtc, zone), zone)
+        return minOf(startUtc + DEFAULT_DURATION_MS, dayEnd)
     }
+
+    private fun parse(date: String): LocalDate? =
+        runCatching { LocalDate.parse(date, dateFormat) }.getOrNull()
 }

@@ -1,10 +1,13 @@
 package com.majdus.organisateur
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.icu.util.Calendar
 import android.util.AttributeSet
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageButton
@@ -59,11 +62,48 @@ class MonthCalendarView @JvmOverloads constructor(
         set(Calendar.DAY_OF_MONTH, 1)
     }
     private var selectedDate: Calendar = newCalendar(System.currentTimeMillis())
-    private var markedDates: Set<String> = emptySet()
+    /** Couleurs des occurrences de chaque jour, en clés "yyyy-MM-dd". */
+    private var markedDates: Map<String, List<String>> = emptyMap()
 
     private val colorPrimary = ContextCompat.getColor(context, R.color.text_primary)
     private val colorMuted = ContextCompat.getColor(context, R.color.text_tertiary)
     private val colorAccent = ContextCompat.getColor(context, R.color.accent_calendar)
+
+    /**
+     * Balayage horizontal pour changer de mois.
+     *
+     * Détection de geste plutôt qu'un `ViewPager2`: cette vue vit dans la barre d'application
+     * pour s'effacer au défilement de la liste, et y glisser un pager reprendrait ce repliement.
+     * Le geste attendu s'obtient ici pour quelques lignes, sans toucher à cet équilibre.
+     */
+    private val touchSlop = android.view.ViewConfiguration.get(context).scaledTouchSlop
+    private var downX = 0f
+    private var downY = 0f
+
+    private val swipeDetector = GestureDetector(
+        context,
+        object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                val dx = e2.x - (e1?.x ?: return false)
+                // Le geste doit être franchement horizontal: sans cela, un défilement vertical de
+                // la liste ferait changer de mois au passage.
+                if (kotlin.math.abs(dx) < SWIPE_MIN_PX ||
+                    kotlin.math.abs(dx) < kotlin.math.abs(e2.y - e1.y)
+                ) {
+                    return false
+                }
+                shiftMonth(if (dx < 0) 1 else -1)
+                return true
+            }
+        }
+    )
 
     init {
         orientation = VERTICAL
@@ -84,23 +124,23 @@ class MonthCalendarView @JvmOverloads constructor(
     val selectedTimeInMillis: Long get() = selectedDate.timeInMillis
 
     /**
-     * Bornes des jours affichés, débordements sur les mois voisins compris: c'est la plage
-     * dont il faut connaître les événements pour poser toutes les pastilles.
+     * Bornes `[début, fin)` des jours affichés, débordements sur les mois voisins compris:
+     * c'est la plage dont il faut connaître les événements pour poser toutes les pastilles.
+     *
+     * En instants et non en clés de jour: la base range les événements par instant, et un
+     * rendez-vous à cheval sur deux jours ne se retrouve que par un test de chevauchement.
      */
-    fun visibleRange(): Pair<String, String> {
+    fun visibleRangeUtc(): Pair<Long, Long> {
         val start = firstVisibleDay()
-        val end = (start.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, TOTAL_CELLS - 1) }
-        // Clés grégoriennes quel que soit le calendrier affiché: c'est le format de la base.
-        return DateLabels.key(start.timeInMillis) to DateLabels.key(end.timeInMillis)
+        val end = (start.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, TOTAL_CELLS) }
+        return start.timeInMillis to end.timeInMillis
     }
 
-    /** Bornes du mois affiché, pour le décompte du résumé. */
-    fun monthRange(): Pair<String, String> {
+    /** Bornes `[début, fin)` du mois affiché, pour le décompte du résumé. */
+    fun monthRangeUtc(): Pair<Long, Long> {
         val start = displayedMonth.clone() as Calendar
-        val end = (start.clone() as Calendar).apply {
-            set(Calendar.DAY_OF_MONTH, start.getActualMaximum(Calendar.DAY_OF_MONTH))
-        }
-        return DateLabels.key(start.timeInMillis) to DateLabels.key(end.timeInMillis)
+        val end = (start.clone() as Calendar).apply { add(Calendar.MONTH, 1) }
+        return start.timeInMillis to end.timeInMillis
     }
 
     /** Sélectionne un jour, en amenant le mois affiché sur lui si besoin. */
@@ -118,9 +158,9 @@ class MonthCalendarView @JvmOverloads constructor(
         if (monthChanged) onMonthChanged?.invoke()
     }
 
-    /** Jours portant au moins un événement, au format "yyyy-MM-dd". */
-    fun setMarkedDates(dates: Set<String>) {
-        markedDates = dates
+    /** Couleurs par jour, au format "yyyy-MM-dd". */
+    fun setMarkedDates(colors: Map<String, List<String>>) {
+        markedDates = colors
         render()
     }
 
@@ -160,7 +200,11 @@ class MonthCalendarView @JvmOverloads constructor(
                         root = cellView,
                         day = cellView.findViewById(R.id.day),
                         gregorianDay = cellView.findViewById(R.id.gregorianDay),
-                        dot = cellView.findViewById(R.id.dot)
+                        dots = listOf(
+                            cellView.findViewById(R.id.dot),
+                            cellView.findViewById(R.id.dot2),
+                            cellView.findViewById(R.id.dot3)
+                        )
                     )
                 )
             }
@@ -215,7 +259,7 @@ class MonthCalendarView @JvmOverloads constructor(
             val inMonth = cursor.get(Calendar.MONTH) == displayedMonthIndex
             val isSelected = isSameDay(cursor, selectedDate)
             val isToday = DateLabels.isToday(timestamp)
-            val isMarked = markedDates.contains(DateLabels.key(timestamp))
+            val colors = markedDates[DateLabels.key(timestamp)].orEmpty()
 
             cell.day.text = cursor.get(Calendar.DAY_OF_MONTH).toString()
             // En hijri, la case porte aussi son équivalent grégorien: on garde le pied dans le
@@ -244,13 +288,24 @@ class MonthCalendarView @JvmOverloads constructor(
             )
             // Un jour hors du mois affiché reste lisible, mais ne doit pas capter le regard.
             cell.day.alpha = if (inMonth) 1f else 0.5f
-            cell.dot.visibility = if (isMarked) View.VISIBLE else View.INVISIBLE
-            cell.dot.alpha = if (inMonth) 1f else 0.5f
+            for ((index, dot) in cell.dots.withIndex()) {
+                val colorKey = colors.getOrNull(index)
+                dot.visibility = if (colorKey == null) View.GONE else View.VISIBLE
+                if (colorKey != null) {
+                    dot.backgroundTintList =
+                        ColorStateList.valueOf(EventColors.color(context, colorKey))
+                }
+                dot.alpha = if (inMonth) 1f else 0.5f
+            }
 
             cell.root.contentDescription = context.getString(
                 R.string.calendar_day_description,
                 CalendarSystems.dayHeader(context, calendarSystem, timestamp),
-                if (isMarked) context.getString(R.string.calendar_day_has_events) else ""
+                if (colors.isNotEmpty()) {
+                    context.getString(R.string.calendar_day_has_events)
+                } else {
+                    ""
+                }
             )
             cell.root.setOnClickListener { selectDate(timestamp, notify = true) }
 
@@ -279,6 +334,36 @@ class MonthCalendarView @JvmOverloads constructor(
         return cursor
     }
 
+    /**
+     * N'intercepte qu'un glissé franchement horizontal.
+     *
+     * Le détecteur voit tous les événements — il lui faut l'appui initial pour reconnaître un
+     * balayage — mais son verdict ne décide pas de l'interception: il répond `true` dès l'appui,
+     * ce qui priverait les cases de leurs clics. La décision se prend donc ici, au premier
+     * déplacement qui dépasse le seuil du système.
+     */
+    override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
+        swipeDetector.onTouchEvent(event)
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = event.x
+                downY = event.y
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = kotlin.math.abs(event.x - downX)
+                val dy = kotlin.math.abs(event.y - downY)
+                if (dx > touchSlop && dx > dy) return true
+            }
+        }
+        return false
+    }
+
+    @Suppress("ClickableViewAccessibility") // Le balayage double la navigation par chevrons.
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        swipeDetector.onTouchEvent(event)
+        return true
+    }
+
     private fun isSameDay(first: Calendar, second: Calendar): Boolean =
         first.get(Calendar.YEAR) == second.get(Calendar.YEAR) &&
                 first.get(Calendar.DAY_OF_YEAR) == second.get(Calendar.DAY_OF_YEAR)
@@ -287,7 +372,7 @@ class MonthCalendarView @JvmOverloads constructor(
         val root: View,
         val day: TextView,
         val gregorianDay: TextView,
-        val dot: View
+        val dots: List<View>
     )
 
     private companion object {
@@ -295,5 +380,8 @@ class MonthCalendarView @JvmOverloads constructor(
         const val DAYS_PER_WEEK = 7
         const val TOTAL_CELLS = WEEKS * DAYS_PER_WEEK
         val WEEKDAY_LABELS = listOf("L", "M", "M", "J", "V", "S", "D")
+
+        /** En deçà, le geste est trop court pour être un balayage volontaire. */
+        const val SWIPE_MIN_PX = 80f
     }
 }

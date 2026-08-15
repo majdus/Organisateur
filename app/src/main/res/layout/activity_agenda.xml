@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_background"
+    tools:context=".Agenda">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:elevation="0dp"
+        app:liftOnScroll="false">
+
+        <!-- Bandeau fixe: il porte ce qui vaut pour tous les découpages. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@android:color/transparent"
+                app:menu="@menu/agenda"
+                app:navigationContentDescription="@string/action_back"
+                app:navigationIcon="@drawable/ic_arrow_back"
+                app:navigationIconTint="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/textTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="24dp"
+                android:text="@string/agenda_title"
+                android:textAppearance="@style/TextAppearance.Organisateur.ScreenTitle" />
+
+            <TextView
+                android:id="@+id/textSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:paddingHorizontal="24dp"
+                android:textAppearance="@style/TextAppearance.Organisateur.Summary"
+                tools:text="5 événements ce mois-ci" />
+
+            <!-- Le découpage se change sans arrêt: sa place est sous le pouce, pas dans un menu. -->
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/viewModeGroup"
+                style="@style/Widget.Organisateur.Segments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="2dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewDay"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    android:text="@string/agenda_view_day" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewWeek"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    android:text="@string/agenda_view_week" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewMonth"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    android:text="@string/agenda_view_month" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnViewSchedule"
+                    style="@style/Widget.Organisateur.Segments.Button.Calendar"
+                    android:text="@string/agenda_view_schedule" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+        </LinearLayout>
+
+        <!-- Le mois s'efface au défilement de l'agenda: une journée chargée récupère alors toute
+             la hauteur de l'écran. Sans ce repliement, la liste resterait cantonnée à ce qu'un
+             mois de six semaines lui laisse — moins de hauteur que le bouton d'ajout, qui
+             recouvrirait alors son premier événement. -->
+        <LinearLayout
+            android:id="@+id/monthHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_scrollFlags="scroll|snap">
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Organisateur.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp">
+
+                <com.majdus.organisateur.MonthCalendarView
+                    android:id="@+id/calendar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="4dp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/app_background"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="24dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="2dp">
+
+                <TextView
+                    android:id="@+id/selectedDateLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Organisateur.SectionTitle"
+                    tools:text="Aujourd'hui, mardi 4 août" />
+            </LinearLayout>
+
+            <!-- Correspondance grégorienne, en hijri seulement: la porter sur la même ligne que
+                 le titre le ferait déborder. -->
+            <TextView
+                android:id="@+id/selectedDateSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="24dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="5 août"
+                tools:visibility="visible" />
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/timePager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/scheduleRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="104dp"
+            android:visibility="gone"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_schedule_row" />
+
+        <TextView
+            android:id="@+id/scheduleEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="24dp"
+            android:text="@string/agenda_schedule_empty"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:id="@+id/monthList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/eventsRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingTop="4dp"
+                android:paddingBottom="104dp"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_event" />
+
+            <!-- État vide discret, aligné sous l'en-tête de journée. La marge de fin tient le
+                 texte à l'écart du bouton d'ajout, qui est étendu donc large. -->
+            <LinearLayout
+                android:id="@+id/emptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="24dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="140dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_calendar"
+                    app:tint="@color/text_tertiary" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:text="@string/calendar_empty_subtitle"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </FrameLayout>
+    </FrameLayout>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/addEvent"
+        style="@style/Widget.Organisateur.Fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:text="@string/calendar_add"
+        app:backgroundTint="@color/accent_calendar"
+        app:icon="@drawable/ic_add" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

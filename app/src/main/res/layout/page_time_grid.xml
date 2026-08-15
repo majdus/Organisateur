@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- En-tête et bandeau restent hors du scroller: ils doivent tenir en place pendant qu'on
+         parcourt la journée. -->
+    <LinearLayout
+        android:id="@+id/dayHeaders"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="56dp"
+        android:paddingEnd="0dp" />
+
+    <LinearLayout
+        android:id="@+id/allDayBand"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="56dp"
+        android:paddingEnd="0dp"
+        android:paddingBottom="4dp"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/border_subtle" />
+
+    <!-- La gouttière des heures et la grille vivent dans le même scroller: leur défilement est
+         commun par construction, il n'y a rien à synchroniser. -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroller"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="96dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.majdus.organisateur.agenda.HourGutterView
+                android:id="@+id/gutter"
+                android:layout_width="56dp"
+                android:layout_height="wrap_content" />
+
+            <com.majdus.organisateur.agenda.TimeGridView
+                android:id="@+id/grid"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

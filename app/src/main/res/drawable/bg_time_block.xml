@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bloc d'événement dans une grille horaire. La teinte est posée par le code, à partir de la
+     couleur de l'événement. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="8dp" />
+    <solid android:color="@color/surface_muted" />
+</shape>
