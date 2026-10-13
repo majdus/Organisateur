@@ -15,6 +15,10 @@
         app:elevation="0dp"
         app:liftOnScroll="false">
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -27,6 +31,7 @@
                 android:id="@+id/textGreeting"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingEnd="32dp"
                 android:textAppearance="@style/TextAppearance.Organisateur.ScreenTitle"
                 tools:text="Bonjour," />
 
@@ -38,6 +43,19 @@
                 android:textAppearance="@style/TextAppearance.Organisateur.Summary"
                 tools:text="Nous sommes mardi 4 août" />
         </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/buttonMore"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="28dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/home_more"
+                android:src="@drawable/ic_more_vert"
+                app:tint="@color/text_secondary" />
+        </FrameLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView

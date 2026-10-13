@@ -57,4 +57,14 @@ interface EventDao {
 
     @Delete
     suspend fun delete(event: Event)
+
+    // Sauvegarde et restauration: l'agenda entier, séries et occurrences détachées comprises.
+    @Query("SELECT * FROM events")
+    suspend fun all(): List<Event>
+
+    @Insert
+    suspend fun insertAll(events: List<Event>)
+
+    @Query("DELETE FROM events")
+    suspend fun deleteAll()
 }

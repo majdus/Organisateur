@@ -51,6 +51,18 @@ class AlarmRepository(private val context: Context) {
     }
 
     /**
+     * Remplace toute la liste, pour la restauration d'une sauvegarde. Chaque réveil existant est
+     * oublié d'abord: un rappel absent de la sauvegarde sonnerait sinon sans plus figurer nulle
+     * part dans l'app.
+     */
+    fun replaceAll(alarms: List<Alarm>) {
+        for (key in storedKeys()) AlarmScheduler.forget(context, key)
+        val unique = alarms.distinctBy { it.storageKey }
+        save(unique.mapTo(HashSet()) { it.storageKey })
+        for (alarm in unique) AlarmScheduler.setEnabled(context, alarm.storageKey, alarm.enabled)
+    }
+
+    /**
      * Remet l'existant d'aplomb:
      * - normalise les entrées héritées (`"Réveil\n7:5"` → `"Réveil\n07:05"`),
      * - supprime les entrées inexploitables (sans intitulé, heure invalide) qui restaient

@@ -22,4 +22,10 @@ interface EventExceptionDao {
 
     @Delete
     suspend fun delete(exception: EventException)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(exceptions: List<EventException>)
+
+    @Query("DELETE FROM event_exceptions")
+    suspend fun deleteAll()
 }

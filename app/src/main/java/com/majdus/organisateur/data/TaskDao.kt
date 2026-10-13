@@ -53,4 +53,11 @@ interface TaskDao {
 
     @Delete
     suspend fun delete(task: Task)
+
+    // Sauvegarde et restauration: la liste entière, remplacée d'un bloc.
+    @Insert
+    suspend fun insertAll(tasks: List<Task>)
+
+    @Query("DELETE FROM tasks")
+    suspend fun deleteAll()
 }

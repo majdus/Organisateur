@@ -41,6 +41,41 @@
     <string name="home_events_one">1 aujourd\'hui</string>
     <string name="home_events_other">%1$d aujourd\'hui</string>
 
+    <string name="home_more">Plus d\'options</string>
+    <string name="backup_save">Sauvegarder</string>
+    <string name="backup_restore">Restaurer</string>
+    <string name="backup_file_name">organisateur-%1$s.json</string>
+    <string name="backup_saved">Sauvegarde enregistrée</string>
+    <string name="backup_save_failed">Échec de la sauvegarde</string>
+    <string name="backup_restore_title">Restaurer cette sauvegarde ?</string>
+    <string name="backup_restore_message">%1$s\n\nLe contenu actuel sera remplacé.</string>
+    <string name="backup_restore_dated">Sauvegarde du %1$s</string>
+    <string name="backup_restore_confirm">Remplacer</string>
+    <string name="backup_restored">Sauvegarde restaurée</string>
+    <string name="backup_restore_failed">Échec de la restauration</string>
+    <string name="backup_invalid">Ce fichier n\'est pas une sauvegarde Organisateur</string>
+    <string name="backup_too_recent">Sauvegarde faite par une version plus récente</string>
+    <plurals name="backup_tasks">
+        <item quantity="one">%d tâche</item>
+        <item quantity="many">%d tâches</item>
+        <item quantity="other">%d tâches</item>
+    </plurals>
+    <plurals name="backup_notes">
+        <item quantity="one">%d note</item>
+        <item quantity="many">%d notes</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
+    <plurals name="backup_alarms">
+        <item quantity="one">%d rappel</item>
+        <item quantity="many">%d rappels</item>
+        <item quantity="other">%d rappels</item>
+    </plurals>
+    <plurals name="backup_events">
+        <item quantity="one">%d événement</item>
+        <item quantity="many">%d événements</item>
+        <item quantity="other">%d événements</item>
+    </plurals>
+
     <!-- ===== Tâches ===== -->
     <string name="tasks_title">Tâches</string>
     <string name="tasks_add">Nouvelle tâche</string>
@@ -71,6 +106,8 @@
     <string name="task_checked_deleted">Tâche terminée et supprimée</string>
 
     <string name="task_settings_action">Réglages des tâches</string>
+    <string name="tasks_copy_list">Copier la liste</string>
+    <string name="tasks_list_copied">Liste copiée</string>
     <string name="task_settings_title">Réglages</string>
     <string name="task_settings_placement">Nouvelle tâche</string>
     <string name="task_settings_placement_top">En haut</string>
@@ -106,8 +143,6 @@
 
     <!-- Translittération française des mois hijri, en minuscules comme les mois grégoriens
          rendus par SimpleDateFormat: la majuscule initiale est posée à l'affichage. Ces noms
-    <string name="tasks_copy_list">Copier la liste</string>
-    <string name="tasks_list_copied">Liste copiée</string>
          sont tenus ici plutôt que pris chez le système, dont rien ne garantit qu'il sache
          nommer les mois islamiques en français. -->
     <string-array name="hijri_months">
@@ -272,6 +307,8 @@
     <string name="note_delete_checked">Supprimer les éléments cochés</string>
     <string name="note_checked_deleted_one">1 élément supprimé</string>
     <string name="note_checked_deleted_other">%1$d éléments supprimés</string>
+    <string name="note_copy_list">Copier la liste</string>
+    <string name="note_list_copied">Liste copiée</string>
 
     <string name="notes_format_bold">Gras</string>
     <string name="notes_format_italic">Italique</string>
@@ -307,8 +344,6 @@
     <string name="alarm_item_description">Rappel %1$s à %2$s</string>
     <string name="alarm_already_exists">Ce rappel existe déjà</string>
 
-    <string name="note_copy_list">Copier la liste</string>
-    <string name="note_list_copied">Liste copiée</string>
     <string name="alarm_today">Aujourd\'hui</string>
     <string name="alarm_tomorrow">Demain</string>
     <string name="alarm_disabled">Désactivé</string>

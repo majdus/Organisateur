@@ -84,4 +84,14 @@ interface NoteDao {
     /** Suppression sans relire la ligne: le corps peut peser plusieurs mégaoctets. */
     @Query("DELETE FROM notes WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    /**
+     * Les identifiants seuls: la sauvegarde relit ensuite chaque note par `loadFullNote`, le
+     * seul chemin sûr pour un corps de plus de 2 Mo.
+     */
+    @Query("SELECT id FROM notes ORDER BY position ASC, id ASC")
+    suspend fun allIds(): List<String>
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAll()
 }
