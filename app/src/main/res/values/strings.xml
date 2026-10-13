@@ -106,6 +106,8 @@
 
     <!-- Translittération française des mois hijri, en minuscules comme les mois grégoriens
          rendus par SimpleDateFormat: la majuscule initiale est posée à l'affichage. Ces noms
+    <string name="tasks_copy_list">Copier la liste</string>
+    <string name="tasks_list_copied">Liste copiée</string>
          sont tenus ici plutôt que pris chez le système, dont rien ne garantit qu'il sache
          nommer les mois islamiques en français. -->
     <string-array name="hijri_months">
@@ -305,6 +307,8 @@
     <string name="alarm_item_description">Rappel %1$s à %2$s</string>
     <string name="alarm_already_exists">Ce rappel existe déjà</string>
 
+    <string name="note_copy_list">Copier la liste</string>
+    <string name="note_list_copied">Liste copiée</string>
     <string name="alarm_today">Aujourd\'hui</string>
     <string name="alarm_tomorrow">Demain</string>
     <string name="alarm_disabled">Désactivé</string>

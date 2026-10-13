@@ -1,11 +1,14 @@
 package com.majdus.organisateur
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -192,6 +195,10 @@ class NoteEditor : AppCompatActivity() {
                 }
                 R.id.action_toggle_checkboxes -> {
                     if (noteType == Note.TYPE_CHECKLIST) convertToText() else convertToChecklist()
+                    true
+                }
+                R.id.action_copy_list -> {
+                    copyList()
                     true
                 }
                 R.id.action_uncheck_all -> {
@@ -574,6 +581,8 @@ class NoteEditor : AppCompatActivity() {
         menu.findItem(R.id.action_toggle_checkboxes)?.setTitle(
             if (isChecklist) R.string.note_hide_checkboxes else R.string.note_show_checkboxes
         )
+        menu.findItem(R.id.action_copy_list)?.isVisible =
+            isChecklist && checklistItems.any { it.text.isNotBlank() }
         menu.findItem(R.id.action_uncheck_all)?.isVisible = hasChecked
         menu.findItem(R.id.action_delete_checked)?.isVisible = hasChecked
     }
@@ -607,6 +616,23 @@ class NoteEditor : AppCompatActivity() {
         // Après le changement de type: l'état de la barre ne se relit que sur une note de texte.
         watchSelection()
         scheduleSave()
+    }
+
+    /**
+     * Met la liste entière dans le presse-papiers, une ligne par élément. Comme au passage en
+     * texte, les cases ne sont pas recopiées: c'est le texte qui se colle ailleurs.
+     */
+    private fun copyList() {
+        val text = Checklist.toText(checklistItems)
+        if (text.isEmpty()) return
+        val label = titleView.text?.toString()?.takeIf { it.isNotBlank() }
+            ?: getString(R.string.note_copy_list)
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+        // Depuis Android 13, le système annonce lui-même la copie: un mot de plus ferait double.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Snackbar.make(rootView, R.string.note_list_copied, Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     private fun deleteCheckedItems() {
