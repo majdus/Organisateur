@@ -5,24 +5,31 @@ import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
 import android.provider.Settings
 import android.view.View
 import android.view.animation.AnimationUtils
+import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.majdus.organisateur.data.AppDatabase
 import com.majdus.organisateur.data.EventRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 /**
@@ -48,6 +55,18 @@ class MainActivity : AppCompatActivity() {
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    private val createBackup =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            if (uri != null) writeBackup(uri)
+        }
+
+    // Tous types acceptés: selon le gestionnaire de fichiers, un .json remonte comme du texte ou
+    // comme un binaire quelconque. C'est la lecture qui dira si c'est bien une sauvegarde.
+    private val openBackup =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) readBackup(uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -60,6 +79,8 @@ class MainActivity : AppCompatActivity() {
         homeAdapter = HomeAdapter(::openFeature)
         tilesView.adapter = homeAdapter
         tilesView.setHasFixedSize(true)
+
+        findViewById<View>(R.id.buttonMore).setOnClickListener(::showMoreMenu)
 
         renderHeader()
         askForPermissions()
@@ -191,6 +212,111 @@ class MainActivity : AppCompatActivity() {
         startActivity(Intent(this, target))
     }
 
+    private fun showMoreMenu(anchor: View) {
+        PopupMenu(this, anchor).apply {
+            inflate(R.menu.home)
+            setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_backup -> {
+                        val day = BACKUP_DAY_FORMAT.format(Date())
+                        createBackup.launch(getString(R.string.backup_file_name, day))
+                        true
+                    }
+                    R.id.action_restore -> {
+                        openBackup.launch(arrayOf("*/*"))
+                        true
+                    }
+                    else -> false
+                }
+            }
+            show()
+        }
+    }
+
+    /**
+     * L'écriture va à son terme même si l'écran est détruit entre-temps: un fichier à moitié
+     * écrit serait pire qu'aucun. En cas d'échec, le fichier créé par le sélecteur est retiré pour
+     * ne pas laisser traîner une sauvegarde vide qu'on croirait bonne.
+     */
+    private fun writeBackup(uri: Uri) {
+        val context = applicationContext
+        lifecycleScope.launch {
+            val saved = withContext(NonCancellable + Dispatchers.IO) {
+                val result = runCatching {
+                    val output = context.contentResolver.openOutputStream(uri, "w")
+                        ?: error("flux indisponible")
+                    output.use { Backup.export(context, it) }
+                }
+                if (result.isFailure) {
+                    runCatching { DocumentsContract.deleteDocument(context.contentResolver, uri) }
+                }
+                result.isSuccess
+            }
+            showSnackbar(if (saved) R.string.backup_saved else R.string.backup_save_failed)
+        }
+    }
+
+    /** Le fichier est lu et vérifié en entier avant la question: rien n'est touché s'il est mauvais. */
+    private fun readBackup(uri: Uri) {
+        val context = applicationContext
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val input = context.contentResolver.openInputStream(uri)
+                        ?: throw Backup.InvalidBackupException("flux indisponible")
+                    input.use { Backup.read(it) }
+                }
+            }
+            result.fold(
+                onSuccess = ::confirmRestore,
+                onFailure = { error ->
+                    showSnackbar(
+                        if (error is Backup.TooRecentBackupException) R.string.backup_too_recent
+                        else R.string.backup_invalid
+                    )
+                }
+            )
+        }
+    }
+
+    private fun confirmRestore(content: Backup.Content) {
+        val counts = listOf(
+            resources.getQuantityString(R.plurals.backup_tasks, content.tasks.size, content.tasks.size),
+            resources.getQuantityString(R.plurals.backup_notes, content.notes.size, content.notes.size),
+            resources.getQuantityString(R.plurals.backup_alarms, content.alarms.size, content.alarms.size),
+            resources.getQuantityString(R.plurals.backup_events, content.eventCount, content.eventCount)
+        ).joinToString(" · ")
+        val summary = if (content.exportedAt > 0) {
+            getString(R.string.backup_restore_dated, BACKUP_DATE_FORMAT.format(Date(content.exportedAt))) +
+                "\n" + counts
+        } else {
+            counts
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.backup_restore_title)
+            .setMessage(getString(R.string.backup_restore_message, summary))
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.backup_restore_confirm) { _, _ -> restore(content) }
+            .show()
+    }
+
+    /** Comme l'écriture, la restauration ne s'interrompt pas avec l'écran. */
+    private fun restore(content: Backup.Content) {
+        val context = applicationContext
+        lifecycleScope.launch {
+            val restored = withContext(NonCancellable + Dispatchers.IO) {
+                runCatching { Backup.restore(context, content) }.isSuccess
+            }
+            refreshTiles()
+            showSnackbar(if (restored) R.string.backup_restored else R.string.backup_restore_failed)
+        }
+    }
+
+    private fun showSnackbar(messageRes: Int) {
+        Snackbar.make(findViewById(R.id.rootLayout), messageRes, Snackbar.LENGTH_LONG).show()
+    }
+
     private fun askForPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -225,5 +351,7 @@ class MainActivity : AppCompatActivity() {
         private const val PREFS_NAME = "organisateur"
         private const val KEY_EXACT_ALARM_ASKED = "exact_alarm_asked"
         private val DAY_FORMAT = SimpleDateFormat("EEEE d MMMM", Locale.FRANCE)
+        private val BACKUP_DAY_FORMAT = SimpleDateFormat("yyyy-MM-dd", Locale.FRANCE)
+        private val BACKUP_DATE_FORMAT = SimpleDateFormat("d MMMM yyyy 'à' HH:mm", Locale.FRANCE)
     }
 }

@@ -4,6 +4,32 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 Ce projet suit le [versionnage sémantique](https://semver.org/lang/fr/) ; le `versionCode`
 Android est dérivé du nom de version : `majeure * 10000 + mineure * 100 + correctif`.
 
+## [2.7.0] — 2026-10-13
+
+### Ajouté
+- **Sauvegarde et restauration.** Un bouton ⋮ en haut à droite de l'accueil propose
+  « Sauvegarder » et « Restaurer ». Tout le contenu de l'application tient dans un fichier JSON
+  qu'on range où l'on veut grâce au sélecteur de fichiers du système — Téléchargements, Drive,
+  carte SD — sans aucune permission à accorder : tâches, notes, événements avec leurs répétitions
+  et leurs rappels, rappels quotidiens avec leur état, et les réglages des écrans.
+- **La restauration remplace tout, après confirmation.** Le fichier est lu et vérifié en entier
+  avant la question, qui annonce la date de la sauvegarde et ce qu'elle contient : un fichier qui
+  n'est pas une sauvegarde, ou qui vient d'une version plus récente, est refusé sans rien toucher.
+  Les rappels sont réarmés aussitôt, et un rappel absent de la sauvegarde ne sonne plus.
+- **« Copier la liste »**, dans le menu de l'écran Tâches et dans celui d'une note en liste, met
+  tous les éléments dans le presse-papiers, une ligne par élément, sans les cases.
+
+### Notes techniques
+- Le format décrit les données et non leur stockage — un rappel y est un intitulé et une heure,
+  pas la clé des préférences — et porte un numéro de `format`. Les champs inconnus sont ignorés,
+  les champs absents prennent la valeur par défaut de l'entité.
+- Écriture et lecture se font en flux, et chaque note est relue par tranches : une note de plus
+  de 2 Mo ne passe pas un `SELECT *`. Vérifié avec une note de 3,2 millions de caractères,
+  restaurée puis réexportée à l'identique.
+- La base est remplacée dans une seule transaction ; doublons et rappels d'événement orphelins
+  sont écartés à la lecture pour qu'une ligne fautive ne fasse pas tout échouer. Tout nouveau
+  champ d'entité ou nouveau réglage devra être ajouté à `Backup.kt`.
+
 ## [2.6.1] — 2026-08-15
 
 ### Corrigé

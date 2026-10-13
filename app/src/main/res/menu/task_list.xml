@@ -7,4 +7,9 @@
         android:icon="@drawable/ic_settings"
         android:title="@string/task_settings_action"
         app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_copy_tasks"
+        android:title="@string/tasks_copy_list"
+        app:showAsAction="never" />
 </menu>

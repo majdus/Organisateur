@@ -35,4 +35,7 @@ interface EventReminderDao {
 
     @Query("DELETE FROM event_reminders WHERE eventId = :eventId")
     suspend fun deleteForEvent(eventId: String)
+
+    @Query("DELETE FROM event_reminders")
+    suspend fun deleteAll()
 }

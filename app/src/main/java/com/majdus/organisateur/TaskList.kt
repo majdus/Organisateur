@@ -1,5 +1,9 @@
 package com.majdus.organisateur
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AnimationUtils
@@ -42,6 +46,7 @@ class TaskList : AppCompatActivity() {
 
     private val db by lazy { AppDatabase.getDatabase(this) }
 
+    private lateinit var toolbar: MaterialToolbar
     private lateinit var recyclerView: RecyclerView
     private lateinit var summaryView: TextView
     private lateinit var emptyState: View
@@ -55,12 +60,16 @@ class TaskList : AppCompatActivity() {
         setContentView(R.layout.activity_task_list)
         findViewById<View>(R.id.rootLayout).padForSystemBars()
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar = findViewById(R.id.toolbar)
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
         toolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_task_settings -> {
                     TaskSettingsSheet().show(supportFragmentManager, TaskSettingsSheet.TAG)
+                    true
+                }
+                R.id.action_copy_tasks -> {
+                    copyTasks()
                     true
                 }
                 else -> false
@@ -127,6 +136,8 @@ class TaskList : AppCompatActivity() {
             val tasks = withContext(Dispatchers.IO) { db.taskDao().getAllTasks() }
             taskAdapter.submit(tasks)
             renderEmptyState(tasks.isEmpty())
+            toolbar.menu.findItem(R.id.action_copy_tasks)?.isVisible =
+                tasks.any { it.title.isNotBlank() }
             summaryView.text = summaryOf(tasks)
             if (firstLoad && tasks.isNotEmpty()) {
                 firstLoad = false
@@ -135,6 +146,22 @@ class TaskList : AppCompatActivity() {
                 recyclerView.scheduleLayoutAnimation()
             }
             after()
+        }
+    }
+
+    /**
+     * Met la liste entière dans le presse-papiers, une ligne par tâche et dans l'ordre affiché.
+     * Comme pour une note en liste, les cases ne sont pas recopiées: c'est le texte qui se colle
+     * ailleurs.
+     */
+    private fun copyTasks() {
+        val text = taskAdapter.currentTitles().filter { it.isNotBlank() }.joinToString("\n")
+        if (text.isEmpty()) return
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.tasks_title), text))
+        // Depuis Android 13, le système annonce lui-même la copie: un mot de plus ferait double.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            showSnackbar(getString(R.string.tasks_list_copied))
         }
     }
 

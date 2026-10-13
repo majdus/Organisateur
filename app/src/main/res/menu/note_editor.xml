@@ -20,6 +20,11 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_copy_list"
+        android:title="@string/note_copy_list"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_uncheck_all"
         android:title="@string/note_uncheck_all"
         app:showAsAction="never" />

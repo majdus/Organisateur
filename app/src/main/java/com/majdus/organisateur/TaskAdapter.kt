@@ -63,6 +63,9 @@ class TaskAdapter(
     /** L'ordre affiché à l'instant, à enregistrer une fois la carte relâchée. */
     fun currentOrderIds(): List<String> = tasks.map { it.id }
 
+    /** Les intitulés dans l'ordre affiché, pour la copie de la liste entière. */
+    fun currentTitles(): List<String> = tasks.map { it.title }
+
     class TaskViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val card: MaterialCardView = view.findViewById(R.id.card)
         private val label: TextView = view.findViewById(R.id.label)
